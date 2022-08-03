@@ -127,3 +127,13 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# html generated files
+*.html
+
+# credentials
+test.csv
+
+# geotiff rasters
+*.geotiff
+*.tif

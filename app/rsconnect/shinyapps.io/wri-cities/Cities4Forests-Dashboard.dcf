@@ -1,0 +1,13 @@
+name: Cities4Forests-Dashboard
+title: Cities4Forests-Dashboard
+username:
+account: wri-cities
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 6733226
+bundleId: 6161877
+url: https://wri-cities.shinyapps.io/Cities4Forests-Dashboard/
+when: 1659534805.77009
+lastSyncTime: 1659534805.77011
+asMultiple: FALSE
+asStatic: FALSE
