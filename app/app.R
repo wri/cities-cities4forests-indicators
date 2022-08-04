@@ -17,6 +17,7 @@ library(data.table)
 library(DT)
 library(leafem)
 library(RColorBrewer)
+library(shinydisconnect)
 
 # define aws s3 path
 
@@ -71,16 +72,18 @@ ui = navbarPage("Cities4Forests-Dashboard",
                          
                          ### Filters ----
                          fluidRow(
+                           
+                           
                              
                              column(3,
                                     
                                     ### Select city  ----
                                     selectInput(inputId = "city",
                                                 label = "Select your city",
-                                                choices = c("COD-Bukavu","COG-Brazzaville","COL-Barranquilla",
+                                                choices = c("COG-Brazzaville","COD-Bukavu","COL-Barranquilla",
                                                             "ETH-Addis_Ababa","ETH-Dire_Dawa","KEN-Nairobi",
                                                             "MDG-Antananarivo","MEX-Mexico_City"),
-                                                selected = "COD-Bukavu",
+                                                selected = "COG-Brazzaville",
                                                 width = '100%'),
                                     
                                     # select theme ----
@@ -101,8 +104,29 @@ ui = navbarPage("Cities4Forests-Dashboard",
                                     
                                     # Main indicators
                                     
-                                    h5("City wide level: "),
+                                    h4("City wide level: "),
                                     htmlOutput("city_wide_indicator"),
+                                    
+                                    # # blank space
+                                    # HTML("<br><br><br><br><br><br><br>"),
+                                    # # disconnect message
+                                    # disconnectMessage(
+                                    #   text = "An error occurred. Please refresh the page and try again with another city.",
+                                    #   refresh = "Refresh",
+                                    #   background = "#FFFFFF",
+                                    #   colour = "#077D29",
+                                    #   refreshColour = "#337AB7",
+                                    #   overlayColour = "#000000",
+                                    #   overlayOpacity = 0.6,
+                                    #   width = 450,
+                                    #   top = 50,
+                                    #   size = 22),
+                                    # actionButton("disconnect", 
+                                    #              "Disconnect the dashboard",
+                                    #              width = '100%',
+                                    #              # class = "btn-warning",
+                                    #              style="color: #fff; background-color: #337ab7; border-color: #2e6da4",
+                                    #              ),
                              ),
                              ### Specify plots ----
                              column(8,
@@ -111,7 +135,25 @@ ui = navbarPage("Cities4Forests-Dashboard",
                                                 ### Map plot
                                                 tabPanel("Map", 
                                                          leafletOutput("indicator_map", 
-                                                                       height = 500)),
+                                                                       height = 500),
+                                                         # disconnect message
+                                                         disconnectMessage(
+                                                           text = "An error occurredd due to the data volumetry. Please refresh the page and try again with another city.",
+                                                           refresh = "Refresh",
+                                                           background = "#FFFFFF",
+                                                           colour = "#077D29",
+                                                           refreshColour = "#337AB7",
+                                                           overlayColour = "#000000",
+                                                           overlayOpacity = 0.6,
+                                                           width = 450,
+                                                           top = 50,
+                                                           size = 22),
+                                                         actionButton("disconnect", 
+                                                                      "Disconnect the dashboard",
+                                                                      width = '30%',
+                                                                      # class = "btn-warning",
+                                                                      style="color: #fff; background-color: #337ab7; border-color: #2e6da4",
+                                                         )),
                                                 ### Table plot
                                                 tabPanel("Table", DT::dataTableOutput("indicator_table"),
                                                          downloadButton(outputId = "downloadData",
@@ -138,6 +180,11 @@ ui = navbarPage("Cities4Forests-Dashboard",
 
 # Define server
 server <- function(input, output, session) {
+  
+  # disconnect message
+  observeEvent(input$disconnect, {
+    session$close()
+  })
     
     # # Update indicators based on selected theme
     # observeEvent(input$theme,{
@@ -148,6 +195,8 @@ server <- function(input, output, session) {
     #     )
     # })
     
+  
+  
     
     observe({
         
@@ -360,7 +409,8 @@ server <- function(input, output, session) {
         
         output$indicator_chart <- renderPlotly({
           fig = table_plot %>% 
-            arrange(desc(`Percent of Tree cover`)) %>% 
+            # drop_na(`Percent of Tree cover`,`city name`) %>%
+            # arrange(desc(`Percent of Tree cover`)) %>% 
             plot_ly(color = I("green4")) %>% 
             add_trace(x = ~`city name`,
                       y = ~ `Percent of Tree cover`, 
@@ -369,7 +419,7 @@ server <- function(input, output, session) {
                       name = 'Percent of Tree cover',
                       text = ~paste("Tree cover percent: ",`Percent of Tree cover`)) %>% 
             layout(yaxis = list(title = 'Percent of Tree cover (%)'),
-                   xaxis = list(title = 'Cities'))
+                   xaxis = list(title = 'Cities',categoryorder = "total descending"))
           
           fig
           
