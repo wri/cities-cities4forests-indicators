@@ -110,7 +110,7 @@ ui = navbarPage("Cities4Forests-Dashboard",
                                   selectizeInput(inputId = "indicator",
                                                  label = "Select indicator",
                                                  choices = indicators_list,
-                                                 selected = "Percent of tree cover",
+                                                 selected = "Open space for public use",
                                                  multiple = FALSE,
                                                  width = '100%'),
                                   
@@ -130,7 +130,7 @@ ui = navbarPage("Cities4Forests-Dashboard",
                                                                      height = 500),
                                                        # disconnect message
                                                        disconnectMessage(
-                                                         text = "An error occurredd due to the data volumetry. Please refresh the page and try again with another city.",
+                                                         text = "An error occurred due to the data volumetry. Please refresh the page and try again with another city.",
                                                          refresh = "Refresh",
                                                          background = "#FFFFFF",
                                                          colour = "#077D29",
@@ -144,7 +144,8 @@ ui = navbarPage("Cities4Forests-Dashboard",
                                                                     "Disconnect the dashboard",
                                                                     width = '30%',
                                                                     # class = "btn-warning",
-                                                                    style="color: #fff; background-color: #337ab7; border-color: #2e6da4",
+                                                                    # style="color: #fff; background-color: #337ab7; border-color: #2e6da4",
+                                                                    style="color: #fff; background-color: #b3b3b3; border-color: #b3b3b3",
                                                        )),
                                               ### Table plot
                                               tabPanel("Table", DT::dataTableOutput("indicator_table"),
@@ -160,10 +161,6 @@ ui = navbarPage("Cities4Forests-Dashboard",
                                   )
                            )
                          )
-                ),
-                
-                ## Second tab panel ----
-                tabPanel("Layers"
                 )
                 
                 
@@ -318,6 +315,109 @@ server <- function(input, output, session) {
                             na.color = "transparent",
                             reverse = TRUE)
     
+    
+    # layers: worldpop with open space  -----
+    
+    
+    pop_open_space_data_path = paste("/vsicurl/https://cities-cities4forests.s3.eu-west-3.amazonaws.com/",
+                                     "data/population/worldpop/v_0/",
+                                     geo_name,
+                                     "-",
+                                     aoi_boundary_name,
+                                     "-population-wOpenSpace-2020.tif",
+                                     sep = "")
+    
+    # collect raster data
+    pop_open_space_data = raster(pop_open_space_data_path)
+    
+    city_pop_open_space = raster::mask(pop_open_space_data,
+                                       boundary_aoi)
+    
+    # color pop 
+    pop_open_space_values = values(city_pop_open_space)[!is.na(values(city_pop_open_space))]
+    
+    pal_pop_open_space <- colorNumeric("RdYlBu", 
+                                       pop_open_space_values,
+                                       na.color = "transparent",
+                                       reverse = TRUE)
+    
+    # layers: worldpop with access to tree cover  -----
+    
+    
+    pop_tree_cover_data_path = paste("/vsicurl/https://cities-cities4forests.s3.eu-west-3.amazonaws.com/",
+                                     "data/population/worldpop/v_0/",
+                                     geo_name,
+                                     "-",
+                                     aoi_boundary_name,
+                                     "-population-wTreeCover-2020.tif",
+                                     sep = "")
+    
+    # collect raster data
+    pop_tree_cover_data = raster(pop_tree_cover_data_path)
+    
+    city_pop_tree_cover = raster::mask(pop_tree_cover_data,
+                                       boundary_aoi)
+    
+    # color pop 
+    pop_tree_cover_values = values(city_pop_tree_cover)[!is.na(values(city_pop_tree_cover))]
+    
+    pal_pop_tree_cover <- colorNumeric("RdYlBu", 
+                                       pop_tree_cover_values,
+                                       na.color = "transparent",
+                                       reverse = TRUE)
+    
+    # layers: esa world cover  -----
+    
+    esa_worldcover_data_path = paste("/vsicurl/https://cities-cities4forests.s3.eu-west-3.amazonaws.com/",
+                                     "data/land_use/esa_world_cover/v_0/",
+                                     geo_name,
+                                     "-",
+                                     aoi_boundary_name,
+                                     "-ESA-world_cover-2020_50m.tif",
+                                     sep = "")
+    
+    
+    # collect raster data
+    esa_worldcover_data = raster(esa_worldcover_data_path)
+    
+    city_esa_worldcover = raster::mask(esa_worldcover_data,
+                                       boundary_aoi)
+    
+    
+    # define color palette for WOrld cover
+    Trees_10_green = "#006400"
+    Shrubland_20_orange = "#ffbb22"
+    Grassland_30_yellow = "#ffff4c" 
+    Cropland_40_mauve = "#f096ff"
+    Built_up_50_red = "#fa0000"
+    Barren_sparse_vegetation_60_gray = "#b4b4b4"
+    Snow_ice_70_white = "#f0f0f0"
+    Open_Water_80_blue = "#0064c8"
+    Herbaceous_wetland_90_blue2 = "#0096a0"
+    Mangroves_95_green2 = "#00cf75"
+    Moss_lichen_100_beige = "#fae6a0"
+    
+    worldcover_col = c(Trees_10_green,
+                       Shrubland_20_orange,
+                       Grassland_30_yellow,
+                       Cropland_40_mauve,
+                       Built_up_50_red,
+                       Barren_sparse_vegetation_60_gray,
+                       Snow_ice_70_white,
+                       Open_Water_80_blue,
+                       Herbaceous_wetland_90_blue2,
+                       Mangroves_95_green2,
+                       Moss_lichen_100_beige)
+    worldcover_labels = c('Trees','Shrubland','Grassland','Cropland','Built-up',
+                          'Barren / sparse vegetation','Snow/ice','Open water','Herbaceous wetland',
+                          'Mangroves','Moss/lichen')
+    
+    # define a color palette
+    pal_worldcover <- colorFactor(palette = worldcover_col, 
+                                  levels = c("10","20","30","40","50","60",
+                                             "70","80","90","95","100"),
+                                  na.color = "transparent")
+    
     ########################
     # map indicator ----
     ########################
@@ -390,14 +490,29 @@ server <- function(input, output, session) {
                       dashArray = "",
                       fillOpacity = 0.3,
                       bringToFront = TRUE)) %>% 
+        # plot layer: ESA world cover ----
+      addRasterImage(city_esa_worldcover,
+                     colors = pal_worldcover,
+                     opacity = 1,
+                     maxBytes = 100 * 1024 * 1024,
+                     project=FALSE,
+                     group = "Land cover types") %>%
+        addLegend(colors = worldcover_col,
+                  labels = worldcover_labels,
+                  title = "World Cover",
+                  group = "Land cover types",
+                  position = "bottomleft",
+                  opacity = 1) %>%
         # Layers control
         addLayersControl(
           overlayGroups = c("Administrative boundaries",
                             selected_indicator_label,
-                            "Open Space Areas"),
+                            "Open Space Areas",
+                            "Land cover types"),
           options = layersControlOptions(collapsed = FALSE)
         ) %>% 
-        hideGroup(c("Open Space Areas")) 
+        hideGroup(c("Open Space Areas",
+                    "Land cover types")) 
     }
     
     # Access to public open space - Add layers ----
@@ -429,16 +544,32 @@ server <- function(input, output, session) {
                   title = "Population count </br> (persons per 100m)",
                   group = "Population",
                   position = "bottomleft") %>%
+        # plot layer: POP with open space ----
+      addRasterImage(city_pop_open_space,
+                     colors = pal_pop_open_space ,
+                     opacity = 0.9,
+                     group = "Population - open space",
+                     project=FALSE,
+                     maxBytes = 8 * 1024 * 1024) %>%
+        # Legend
+        addLegend(pal = pal_pop_open_space ,
+                  values = pop_open_space_values,
+                  opacity = 0.9,
+                  title = "Population with access to </br> open space  (persons per 100m)",
+                  group = "Population - open space",
+                  position = "bottomleft") %>%
         # Layers control
         addLayersControl(
           overlayGroups = c("Administrative boundaries",
                             selected_indicator_label,
                             "Open Space Areas",
-                            "Population"),
+                            "Population",
+                            "Population - open space"),
           options = layersControlOptions(collapsed = FALSE)
         ) %>% 
         hideGroup(c("Population",
-                    "Open Space Areas")) 
+                    "Open Space Areas",
+                    "Population - open space")) 
     }
     
     # Access to tree cover - Add layers ----
@@ -459,14 +590,30 @@ server <- function(input, output, session) {
                   title = "Population count </br> (persons per 100m)",
                   group = "Population",
                   position = "bottomleft") %>%
+        # plot layer: POP with access to tree cover ----
+      addRasterImage(city_pop_tree_cover,
+                     colors = pal_pop_tree_cover,
+                     opacity = 0.9,
+                     group = "Population - Tree cover",
+                     project=FALSE,
+                     maxBytes = 8 * 1024 * 1024) %>%
+        # Legend
+        addLegend(pal = pal_pop_tree_cover ,
+                  values = pop_tree_cover_values,
+                  opacity = 0.9,
+                  title = "Population with access to </br> Tree Cover  (persons per 100m)",
+                  group = "Population - Tree cover",
+                  position = "bottomleft") %>%
         # Layers control
         addLayersControl(
           overlayGroups = c("Administrative boundaries",
                             selected_indicator_label,
-                            "Population"),
+                            "Population",
+                            "Population - Tree cover"),
           options = layersControlOptions(collapsed = FALSE)
         ) %>% 
-        hideGroup(c("Population")) 
+        hideGroup(c("Population",
+                    "Population - Tree cover")) 
     }
     
     # center map  
