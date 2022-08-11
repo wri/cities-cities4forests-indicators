@@ -102,7 +102,7 @@ ui = navbarPage("Cities4Forests-Dashboard",
                                   selectizeInput(inputId = "theme",
                                                  label = "Theme",
                                                  choices = indicators_themes,
-                                                 selected = indicators_themes[1],
+                                                 selected = "Greenspace access",
                                                  multiple = FALSE,
                                                  width = '100%'),
                                   
@@ -293,6 +293,31 @@ server <- function(input, output, session) {
                                    sep = "")
     )
     
+    # layers: worldpop  -----
+    
+    
+    pop_data_path = paste("/vsicurl/https://cities-cities4forests.s3.eu-west-3.amazonaws.com/",
+                          "data/population/worldpop/v_0/",
+                          geo_name,
+                          "-",
+                          aoi_boundary_name,
+                          "-WorldPop-population-2020.tif",
+                          sep = "")
+    
+    # collect raster data
+    city_pop = raster(pop_data_path)
+    
+    city_pop_boundary = raster::mask(city_pop,
+                                     boundary_aoi)
+    
+    # color pop 
+    pop_values = values(city_pop_boundary)[!is.na(values(city_pop_boundary))]
+    
+    pal_pop <- colorNumeric("RdYlBu", 
+                            pop_values,
+                            na.color = "transparent",
+                            reverse = TRUE)
+    
     ########################
     # map indicator ----
     ########################
@@ -350,7 +375,7 @@ server <- function(input, output, session) {
         options = layersControlOptions(collapsed = FALSE)
       ) 
     
-    # Add layers based on selected indicator ------
+    # Open space for public use - Add layers ----
     
     if(input$indicator == "Open space for public use"){
       m = m %>% 
@@ -373,6 +398,75 @@ server <- function(input, output, session) {
           options = layersControlOptions(collapsed = FALSE)
         ) %>% 
         hideGroup(c("Open Space Areas")) 
+    }
+    
+    # Access to public open space - Add layers ----
+    if(input$indicator == "Access to public open space"){
+      m = m %>% 
+        # plot layer: OSM
+        addPolygons(data = osm_open_space,
+                    group = "Open Space Areas",
+                    stroke = TRUE, color = "black", weight = 1,dashArray = "1",
+                    smoothFactor = 0.5, fill = TRUE, fillColor = "green",fillOpacity = 0.5,
+                    highlight = highlightOptions(
+                      weight = 5,
+                      color = "#666",
+                      dashArray = "",
+                      fillOpacity = 0.3,
+                      bringToFront = TRUE)) %>% 
+        # plot layer: POP
+        addRasterImage(city_pop_boundary,
+                       colors = pal_pop ,
+                       opacity = 0.9,
+                       group = "Population",
+                       project=FALSE,
+                       maxBytes = 8 * 1024 * 1024,
+                       layerId = "Population") %>% 
+        # Legend for population 
+        addLegend(pal = pal_pop ,
+                  values = pop_values,
+                  opacity = 0.9,
+                  title = "Population count </br> (persons per 100m)",
+                  group = "Population",
+                  position = "bottomleft") %>%
+        # Layers control
+        addLayersControl(
+          overlayGroups = c("Administrative boundaries",
+                            selected_indicator_label,
+                            "Open Space Areas",
+                            "Population"),
+          options = layersControlOptions(collapsed = FALSE)
+        ) %>% 
+        hideGroup(c("Population",
+                    "Open Space Areas")) 
+    }
+    
+    # Access to tree cover - Add layers ----
+    if(input$indicator == "Access to tree cover"){
+      m = m %>% 
+        # plot layer: POP
+        addRasterImage(city_pop_boundary,
+                       colors = pal_pop ,
+                       opacity = 0.9,
+                       group = "Population",
+                       project=FALSE,
+                       maxBytes = 8 * 1024 * 1024,
+                       layerId = "Population") %>% 
+        # Legend for population 
+        addLegend(pal = pal_pop ,
+                  values = pop_values,
+                  opacity = 0.9,
+                  title = "Population count </br> (persons per 100m)",
+                  group = "Population",
+                  position = "bottomleft") %>%
+        # Layers control
+        addLayersControl(
+          overlayGroups = c("Administrative boundaries",
+                            selected_indicator_label,
+                            "Population"),
+          options = layersControlOptions(collapsed = FALSE)
+        ) %>% 
+        hideGroup(c("Population")) 
     }
     
     # center map  
