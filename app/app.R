@@ -67,13 +67,17 @@ indicators_test = read.csv(paste(aws_s3_path,
                            encoding="UTF-8")
 
 indicators = indicators %>% 
-  left_join(indicators_test[,c("geo_id","GRE_3_2_percentPopwOpenSpaceAccess","GRE_3_3_percentPopwTreeCoverAcess")],
+  left_join(indicators_test[,c("geo_id",
+                               "GRE_3_2_percentPopwOpenSpaceAccess",
+                               "GRE_3_3_percentPopwTreeCoverAcess",
+                               "GRE_1_3_percentBuiltwLowAlbedo")],
             by = "geo_id") 
 
 indicators = indicators %>% 
   mutate(GRE_3_1_percentOpenSpaceinBuiltup = 100 * GRE_3_1_percentOpenSpaceinBuiltup,
          GRE_3_2_percentPopwOpenSpaceAccess = 100 * GRE_3_2_percentPopwOpenSpaceAccess,
-         GRE_3_3_percentPopwTreeCoverAcess = 100 * GRE_3_3_percentPopwTreeCoverAcess) 
+         GRE_3_3_percentPopwTreeCoverAcess = 100 * GRE_3_3_percentPopwTreeCoverAcess,
+         GRE_1_3_percentBuiltwLowAlbedo = 100 * GRE_1_3_percentBuiltwLowAlbedo) 
 
 
 ############### App
@@ -668,6 +672,31 @@ server <- function(input, output, session) {
     output$indicator_map <- renderLeaflet({
       m
     })
+    
+    if(input$indicator == "Surface reflectivity"){
+      m = m %>% 
+        # plot layer: ESA world cover ----
+      addRasterImage(city_esa_worldcover,
+                     colors = pal_worldcover,
+                     opacity = 1,
+                     maxBytes = 100 * 1024 * 1024,
+                     project=FALSE,
+                     group = "Land cover types") %>%
+        addLegend(colors = worldcover_col,
+                  labels = worldcover_labels,
+                  title = "World Cover",
+                  group = "Land cover types",
+                  position = "bottomleft",
+                  opacity = 1) %>%
+        # Layers control
+        addLayersControl(
+          overlayGroups = c("Administrative boundaries",
+                            selected_indicator_label,
+                            "Land cover types"),
+          options = layersControlOptions(collapsed = FALSE)
+        ) %>% 
+        hideGroup(c("Land cover types")) 
+    }
     
     
     
