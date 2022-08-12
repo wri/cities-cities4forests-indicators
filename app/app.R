@@ -148,7 +148,8 @@ ui = navbarPage("Cities4Forests-Dashboard",
                                                                     style="color: #fff; background-color: #b3b3b3; border-color: #b3b3b3",
                                                        )),
                                               ### Table plot
-                                              tabPanel("Table", DT::dataTableOutput("indicator_table"),
+                                              tabPanel("Table", DT::dataTableOutput("indicator_table",
+                                                                                    height = 500),
                                                        downloadButton(outputId = "downloadData",
                                                                       label = "Download data")),
                                               ### timeseirs plot
@@ -257,26 +258,28 @@ server <- function(input, output, session) {
       lapply(htmltools::HTML)
     
     
-    # # read tml raster ----
-    # 
-    # tml_data_path = paste("/vsicurl/https://cities-cities4forests.s3.eu-west-3.amazonaws.com/data/tree_cover/tree_mosaic_land/v_0/",
-    #                       geo_name,
-    #                       "-",
-    #                       aoi_boundary_name,
-    #                       "-TML-tree_cover-2000.tif",
-    #                       sep = "")
-    # 
-    # # collect raster data
-    # city_tml = raster(tml_data_path)
-    # 
-    # city_tml_boundary = raster::mask(city_tml,
-    #                                  boundary_aoi)
-    # city_tml_boundary[city_tml_boundary<11] = NA
-    # 
-    # # define color for tree cover
-    # pal_tml <- colorNumeric(palette = "Greens",
-    #                         domain = values(city_tml_boundary), 
-    #                         na.color = "transparent")
+    # Layers: tml ----
+    
+    tml_data_path = paste("/vsicurl/https://cities-cities4forests.s3.eu-west-3.amazonaws.com/data/tree_cover/tree_mosaic_land/v_0/",
+                          geo_name,
+                          "-",
+                          aoi_boundary_name,
+                          "-TML-tree_cover-2020_50m.tif",
+                          sep = "")
+    
+    
+    # collect raster data
+    city_tml = raster(tml_data_path)
+    
+    city_tml_boundary = raster::mask(city_tml,
+                                     boundary_aoi)
+    
+    city_tml_boundary[city_tml_boundary<10] = NA
+    
+    # define color for tree cover
+    pal_tml <- colorNumeric(palette = "Greens",
+                            domain = values(city_tml_boundary), 
+                            na.color = "transparent")
     
     
     # # read OSM open space ----
@@ -597,6 +600,18 @@ server <- function(input, output, session) {
                      group = "Population - Tree cover",
                      project=FALSE,
                      maxBytes = 8 * 1024 * 1024) %>%
+        # Raster of tree cover
+        addRasterImage(city_tml_boundary, #city_tml_aggregate
+                       colors = pal_tml,
+                       opacity = 0.9,
+                       maxBytes = 20 * 1024 * 1024,
+                       project=FALSE,
+                       group = "Tree cover") %>%
+        addLegend(pal = pal_tml,
+                  values = values(city_tml_boundary), #values(city_tml_aggregate),
+                  title = "Tree cover percent",
+                  group = "Tree cover",
+                  position = "bottomleft") %>%
         # Legend
         addLegend(pal = pal_pop_tree_cover ,
                   values = pop_tree_cover_values,
@@ -609,11 +624,39 @@ server <- function(input, output, session) {
           overlayGroups = c("Administrative boundaries",
                             selected_indicator_label,
                             "Population",
-                            "Population - Tree cover"),
+                            "Population - Tree cover",
+                            "Tree cover"),
           options = layersControlOptions(collapsed = FALSE)
         ) %>% 
         hideGroup(c("Population",
-                    "Population - Tree cover")) 
+                    "Population - Tree cover",
+                    "Tree cover")) 
+    } 
+    
+    # Percent of tree cover - Add layers ----
+    if(input$indicator == "Percent of Tree cover"){
+      m = m %>% 
+        # Raster of tree cover
+        addRasterImage(city_tml_boundary, #city_tml_aggregate
+                       colors = pal_tml,
+                       opacity = 0.9,
+                       maxBytes = 20 * 1024 * 1024,
+                       project=FALSE,
+                       group = "Tree cover") %>%
+        addLegend(pal = pal_tml,
+                  values = values(city_tml_boundary), #values(city_tml_aggregate),
+                  title = "Tree cover percent",
+                  group = "Tree cover",
+                  position = "bottomleft") %>%
+        
+        # Layers control
+        addLayersControl(
+          overlayGroups = c("Administrative boundaries",
+                            selected_indicator_label,
+                            "Tree cover"),
+          options = layersControlOptions(collapsed = FALSE)
+        ) %>% 
+        hideGroup(c("Tree cover")) 
     }
     
     # center map  
@@ -649,12 +692,16 @@ server <- function(input, output, session) {
       mutate_if(is.numeric, round, 2) %>% 
       arrange(desc(selected_indicator_name)) 
     
+    # remove empty city name
+    table_plot$geo_name[table_plot$geo_name==""]<-NA
+    table_plot = table_plot %>% 
+      drop_na(geo_name)
     
     names(table_plot) = c("City name",selected_indicator_label)
     
     output$indicator_table <- DT::renderDataTable(
       DT::datatable(table_plot, 
-                    options = list(pageLength = 25)) %>% formatStyle(
+                    options = list(pageLength = 10,order = list(list(2, 'desc')))) %>% formatStyle(
                       selected_indicator_label,
                       backgroundColor = styleInterval(seq(from = min(table_plot[,selected_indicator_label]),
                                                           to = max(table_plot[,selected_indicator_label]),
