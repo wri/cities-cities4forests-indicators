@@ -236,6 +236,11 @@ server <- function(input, output, session) {
       filter(indicator_label %in% selected_indicator_label) %>% 
       pull(indicator_name)
     
+    # get indicator legend  -----
+    selected_indicator_legend = indicators_definitions %>% 
+      filter(indicator_label %in% selected_indicator_label) %>% 
+      pull(indicator_legend)
+    
     # get indicator values  -----
     
     selected_indicator_values = unit_indicators %>% 
@@ -466,7 +471,7 @@ server <- function(input, output, session) {
       addLegend(pal = pal_indicator,
                 values = selected_indicator_values,
                 opacity = 0.9,
-                title = selected_indicator_label,
+                title = selected_indicator_legend,
                 group = selected_indicator_label,
                 position = "topright",
                 labFormat = labelFormat(suffix = "")) %>% 
