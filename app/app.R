@@ -79,6 +79,22 @@ indicators = indicators %>%
          GRE_3_3_percentPopwTreeCoverAcess = 100 * GRE_3_3_percentPopwTreeCoverAcess,
          GRE_1_3_percentBuiltwLowAlbedo = 100 * GRE_1_3_percentBuiltwLowAlbedo) 
 
+# cities comparison ----
+
+cities_comparison_list = c("BRA-Salvador_ADM4-union_1",
+                           "COD-Bukavu_ADM3-union_1",
+                           "	COD-Uvira_ADM3-union_1",
+                           "COG-Brazzaville_ADM4-union_1",
+                           "COL-Barranquilla_ADM4-union_1",
+                           "ETH-Addis_Ababa_ADM4-union_1",
+                           "ETH-Dire_Dawa_ADM3-union_1",
+                           "KEN-Nairobi_ADM3-union_1",
+                           "MDG-Antananarivo_ADM4-union_1",
+                           "MEX-Mexico_City_ADM2-union_1",
+                           "MEX-Monterrey_City_ADM2-union_1")
+
+indicators_comparison = indicators[indicators$geo_id %in% cities_comparison_list, ]
+
 
 ############### App
 
@@ -162,6 +178,10 @@ ui = navbarPage("Cities4Forests-Dashboard",
                                                                     height = 500)),
                                               ### Data description
                                               tabPanel("Definitions", htmlOutput("indicator_definition", 
+                                                                                 height = 500)),
+                                              
+                                              ### Cities comparison
+                                              tabPanel("Benchmark", plotlyOutput("cities_comparison_plot", 
                                                                                  height = 500))
                                   )
                            )
@@ -772,6 +792,62 @@ server <- function(input, output, session) {
       fig
       
     })
+    
+    #########################################
+    ### Cities comparison  ----
+    
+    # cities comparison ----
+    
+    
+    indicators_comparison = indicators_comparison %>% 
+      as.data.frame() %>%
+      dplyr::select(geo_name,selected_indicator_name) %>% 
+      drop_na(selected_indicator_name, geo_name) %>% 
+      mutate_if(is.numeric, round, 2) %>% 
+      arrange(desc(selected_indicator_name)) 
+    
+    # change names
+    names(indicators_comparison) = c("City name",selected_indicator_label)
+    
+    city_num = which(indicators_comparison$`City name` == geo_name)
+    city_color = rep("grey",nrow(indicators_comparison))
+    city_color[city_num] = "green"
+    
+    
+    
+    cities_indicator_avg = round(mean(indicators_comparison[[colnames(indicators_comparison)[2]]]),2)
+    
+    output$cities_comparison_plot <- renderPlotly({
+      fig = plot_ly(x = indicators_comparison$`City name`,
+                    y = indicators_comparison[[colnames(indicators_comparison)[2]]],
+                    type = "bar",
+                    orientation = "v",
+                    name = names(indicators_comparison)[2],
+                    marker = list(color = city_color)) %>% 
+        layout(yaxis = list(title = names(indicators_comparison)[2]),
+               xaxis = list(title = 'Cities',categoryorder = "total descending"),
+               annotations = list(
+                 x = 10,
+                 y = cities_indicator_avg, 
+                 text = paste("Cities' averrage: ", cities_indicator_avg, " %", sep = ""),
+                 showarrow = FALSE,
+                 xanchor = "right"
+               ))
+      
+      add_trace(fig,
+                y = cities_indicator_avg, 
+                type='scatter',
+                mode = 'lines',
+                # mode = 'lines+markers',
+                name = 'Average', 
+                showlegend = F,
+                line = list(color = 'black', 
+                            dash = 'dot',
+                            width = 1)) 
+      
+    })
+    
+    
     
     #########################################
     ### Indicator definition text  ----
