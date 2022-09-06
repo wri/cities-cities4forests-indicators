@@ -104,7 +104,8 @@ indicators_GRE_1_4 = read.csv(paste(aws_s3_path,
 
 indicators = indicators %>% 
   left_join(indicators_GRE_1_4,
-            by = "geo_id")
+            by = "geo_id")  
+# mutate(GRE_1_4_percent_tree_cover_builtup_areas = 100 - GRE_1_4_percent_tree_cover_builtup_areas)
 
 # GRE_1_3 ----
 indicators_GRE_1_3 = read.csv(paste(aws_s3_path,
@@ -125,8 +126,7 @@ indicators_GRE_2_3 = read.csv(paste(aws_s3_path,
 
 indicators = indicators %>% 
   left_join(indicators_GRE_2_3[,c("geo_id","GRE_2_3_population_exposure_pm25")],
-            by = "geo_id") %>% 
-  mutate(GRE_2_3_population_exposure_pm25 = 100 * GRE_2_3_population_exposure_pm25)
+            by = "geo_id") 
 
 
 
