@@ -137,3 +137,7 @@ test.csv
 # geotiff rasters
 *.geotiff
 *.tif
+
+# netcdf
+*.nc
+
