@@ -18,6 +18,7 @@ library(DT)
 library(leafem)
 library(RColorBrewer)
 library(shinydisconnect)
+library(shinyjs)
 
 # define aws s3 path
 
@@ -28,9 +29,15 @@ aws_s3_path = "https://cities-cities4forests.s3.eu-west-3.amazonaws.com/"
 # read indicator definition ------------
 
 
+# indicators_definitions = read.csv(paste(aws_s3_path,
+#                                         "data/indicators/indicators_definition.csv",
+#                                         sep = ""))
 indicators_definitions = read.csv(paste(aws_s3_path,
-                                        "data/indicators/indicators_definition.csv",
+                                        "data/indicators/indicators_definition_v2.csv",
                                         sep = ""))
+
+indicators_definitions_labels = indicators_definitions %>% 
+  filter(indicator_label != "High pollution days (carbon monoxide)")
 
 # get list of themes
 indicators_themes = unique(indicators_definitions$theme)
@@ -118,6 +125,23 @@ indicators = indicators %>%
             by = "geo_id") %>% 
   mutate(GRE_1_3_percentBuiltwLowAlbedo = 100 * GRE_1_3_percentBuiltwLowAlbedo)
 
+# GRE_2_1 ----
+indicators_GRE_2_1 = read.csv(paste(aws_s3_path,
+                                    "data/indicators/dev/cities_indicators_GRE_2_1.csv",
+                                    sep = ""),
+                              encoding="UTF-8")
+
+# indicators_GRE_2_1 = indicators_GRE_2_1 %>% 
+#   pivot_longer(
+#     cols = bc_agl_2010:nmvoc_tro_2020,
+#     names_to = c("gas", "sector", "year"),
+#     names_pattern = "(.*)_(.*)_(.*)",
+#     values_to = "value") 
+
+indicators = indicators %>% 
+  left_join(indicators_GRE_2_1,
+            by = "geo_id")
+
 # GRE_2_3 ----
 indicators_GRE_2_3 = read.csv(paste(aws_s3_path,
                                     "data/indicators/dev/cities_indicators_GRE_2_3.csv",
@@ -127,6 +151,28 @@ indicators_GRE_2_3 = read.csv(paste(aws_s3_path,
 indicators = indicators %>% 
   left_join(indicators_GRE_2_3[,c("geo_id","GRE_2_3_population_exposure_pm25")],
             by = "geo_id") 
+
+# GRE_2_2 ----
+indicators_GRE_2_2 = read.csv(paste(aws_s3_path,
+                                    "data/indicators/dev/cities_indicators_GRE_2_2.csv",
+                                    sep = ""),
+                              encoding="UTF-8")
+
+# indicators = indicators %>% 
+#   left_join(indicators_GRE_2_2[,c("geo_id","GRE_2_2_nb_exceedance_days_coarse_carbon_monoxide")],
+#             by = "geo_id") 
+
+indicators = indicators %>% 
+  left_join(indicators_GRE_2_2[,c("geo_id",
+                                  "GRE_2_2_nb_exceedance_days_nitroge_dioxide",
+                                  "GRE_2_2_nb_exceedance_days_sulfur_dioxide",
+                                  # "exceedancedays.ozone",
+                                  "GRE_2_2_nb_exceedance_days_ozone",
+                                  "GRE_2_2_nb_exceedance_days_fine_particulate_matter",
+                                  "GRE_2_2_nb_exceedance_days_coarse_particulate_matter",
+                                  "GRE_2_2_nb_exceedance_days_coarse_carbon_monoxide")],
+            by = "geo_id") 
+
 
 
 
@@ -152,105 +198,123 @@ cities_comparison_list = c("BRA-Salvador_ADM4-union_1",
                            "RWA-Musanze_ADM5-union_1")
 
 indicators_comparison = indicators[indicators$geo_id %in% cities_comparison_list, ]
-print(indicators_comparison)
+
 
 ############### App
 
-ui = navbarPage("Cities4Forests-Dashboard",
-                id = "active_tab",
-                
-                ### Indicators tab ----
-                tabPanel("Indicators",
-                         
-                         ### Filters ----
-                         fluidRow(
-                           
-                           
-                           
-                           column(3,
-                                  
-                                  ### Select city  ----
-                                  selectInput(inputId = "city",
-                                              label = "Select your city",
-                                              choices = cities,
-                                              selected = "COG-Brazzaville",
+
+ui <- tagList(
+  useShinyjs(),
+  navbarPage("Cities4Forests-Dashboard",
+             id = "active_tab",
+             
+             ### Indicators tab ----
+             tabPanel("Indicators",
+                      
+                      ### Filters ----
+                      fluidRow(
+                        
+                        
+                        
+                        column(3,
+                               
+                               ### Select city  ----
+                               selectInput(inputId = "city",
+                                           label = "Select your city",
+                                           choices = cities,
+                                           selected = "COG-Brazzaville",
+                                           width = '100%'),
+                               
+                               # select theme ----
+                               selectizeInput(inputId = "theme",
+                                              label = "Theme",
+                                              choices = indicators_themes,
+                                              selected = "Greenspace access", #"Greenspace access" "Health - Heat"
+                                              multiple = FALSE,
                                               width = '100%'),
-                                  
-                                  # select theme ----
-                                  selectizeInput(inputId = "theme",
-                                                 label = "Theme",
-                                                 choices = indicators_themes,
-                                                 selected = "Greenspace access", #"Greenspace access" "Health - Heat"
-                                                 multiple = FALSE,
-                                                 width = '100%'),
-                                  
-                                  # select indicator ----
-                                  selectizeInput(inputId = "indicator",
-                                                 label = "Select indicator",
-                                                 choices = indicators_list,
-                                                 selected = "Open space for public use", #  "Open space for public use" "Percent of Tree cover"
-                                                 multiple = FALSE,
-                                                 width = '100%'),
-                                  
-                                  # Main indicators
-                                  
-                                  h4("City wide level: "),
-                                  htmlOutput("city_wide_indicator"),
-                                  
-                                  # plotlyOutput("cities_comparison_plot")
-                                  
-                           ),
-                           ### Specify plots ----
-                           column(8,
-                                  div(style = "background-color: red; width: 100%; height: 100%;"),
-                                  tabsetPanel(type = "tabs",
-                                              ### Map plot
-                                              tabPanel("Map", 
-                                                       leafletOutput("indicator_map", 
-                                                                     height = 500),
-                                                       # disconnect message
-                                                       disconnectMessage(
-                                                         text = "An error occurred due to the data volumetry. Please refresh the page and try again with another city.",
-                                                         refresh = "Refresh",
-                                                         background = "#FFFFFF",
-                                                         colour = "#077D29",
-                                                         refreshColour = "#337AB7",
-                                                         overlayColour = "#000000",
-                                                         overlayOpacity = 0.6,
-                                                         width = 450,
-                                                         top = 50,
-                                                         size = 22),
-                                                       actionButton("disconnect", 
-                                                                    "Disconnect the dashboard",
-                                                                    width = '30%',
-                                                                    # class = "btn-warning",
-                                                                    # style="color: #fff; background-color: #337ab7; border-color: #2e6da4",
-                                                                    style="color: #fff; background-color: #b3b3b3; border-color: #b3b3b3",
-                                                       )),
-                                              ### Table plot
-                                              tabPanel("Table", DT::dataTableOutput("indicator_table",
-                                                                                    height = 500),
-                                                       downloadButton(outputId = "downloadData",
-                                                                      label = "Download data")),
-                                              ### timeseirs plot
-                                              tabPanel("Chart", 
-                                                       plotlyOutput("indicator_chart",
-                                                                    height = 500)),
-                                              ### Data description
-                                              tabPanel("Definitions", htmlOutput("indicator_definition", 
-                                                                                 height = 500)),
-                                              
-                                              ## Cities comparison
-                                              tabPanel("Benchmark", plotlyOutput("cities_comparison_plot",
-                                                                                 height = 500))
-                                  )
-                           )
-                         )
-                )
-                
-                
-                
+                               
+                               # select indicator ----
+                               selectizeInput(inputId = "indicator",
+                                              label = "Select indicator",
+                                              choices = indicators_list,
+                                              selected = "Open space for public use", #  "Open space for public use" "Percent of Tree cover"
+                                              multiple = FALSE,
+                                              width = '100%'),
+                               
+                               # # select air polluant ----
+                               # hidden(selectizeInput(inputId = "indicator_air_polluant",
+                               #                       label = "Select air polluant",
+                               #                       choices = c("GRE_2_2_nb_exceedance_days_nitroge_dioxide",
+                               #                                   "GRE_2_2_nb_exceedance_days_sulfur_dioxide"),
+                               #                       selected = "GRE_2_2_nb_exceedance_days_nitroge_dioxide", 
+                               #                       multiple = FALSE,
+                               #                       width = '100%')),
+                               
+                               # Main indicators
+                               
+                               h4("City wide level: "),
+                               htmlOutput("city_wide_indicator"),
+                               
+                               # plotlyOutput("cities_comparison_plot")
+                               
+                        ),
+                        ### Specify plots ----
+                        column(8,
+                               div(style = "background-color: red; width: 100%; height: 100%;"),
+                               tabsetPanel(type = "tabs",
+                                           id = "tabs",
+                                           ### Map plot
+                                           tabPanel("Map", 
+                                                    leafletOutput("indicator_map", 
+                                                                  height = 500),
+                                                    # disconnect message
+                                                    disconnectMessage(
+                                                      text = "An error occurred due to the data volumetry. Please refresh the page and try again with another city.",
+                                                      refresh = "Refresh",
+                                                      background = "#FFFFFF",
+                                                      colour = "#077D29",
+                                                      refreshColour = "#337AB7",
+                                                      overlayColour = "#000000",
+                                                      overlayOpacity = 0.6,
+                                                      width = 450,
+                                                      top = 50,
+                                                      size = 22),
+                                                    actionButton("disconnect", 
+                                                                 "Disconnect the dashboard",
+                                                                 width = '30%',
+                                                                 # class = "btn-warning",
+                                                                 # style="color: #fff; background-color: #337ab7; border-color: #2e6da4",
+                                                                 style="color: #fff; background-color: #b3b3b3; border-color: #b3b3b3",
+                                                    )),
+                                           ### Table plot
+                                           tabPanel("Table", DT::dataTableOutput("indicator_table",
+                                                                                 height = 500),
+                                                    downloadButton(outputId = "downloadData",
+                                                                   label = "Download data")),
+                                           ### timeseirs plot
+                                           tabPanel("Chart", 
+                                                    plotlyOutput("indicator_chart",
+                                                                 height = 500)),
+                                           
+                                           
+                                           ## Cities comparison
+                                           tabPanel("Benchmark", plotlyOutput("cities_comparison_plot",
+                                                                              height = 500)),
+                                           
+                                           ### Data description
+                                           tabPanel("Definitions", htmlOutput("indicator_definition", 
+                                                                              height = 500)),
+                               )
+                        )
+                      )
+             )
+             
+             
+             
+  )
 )
+
+
 
 # Define server
 server <- function(input, output, session) {
@@ -260,13 +324,57 @@ server <- function(input, output, session) {
     session$close()
   })
   
-  # Update indicators based on selected theme
+  # # Update indicators based on selected theme
+  # observeEvent(input$theme,{
+  #     updateSelectInput(session,
+  #                       'indicator',
+  #                       choices=unique(indicators_definitions[indicators_definitions$theme==input$theme, "indicator_label"]),
+  #                       selected = unique(indicators_definitions[indicators_definitions$theme==input$theme, "indicator_label"])[1],
+  #     )
+  # })
   observeEvent(input$theme,{
     updateSelectInput(session,
                       'indicator',
-                      choices=unique(indicators_definitions[indicators_definitions$theme==input$theme, "indicator_label"]),
-                      selected = unique(indicators_definitions[indicators_definitions$theme==input$theme, "indicator_label"])[1],
+                      choices=unique(indicators_definitions_labels[indicators_definitions_labels$theme==input$theme, "indicator_label"]),
+                      selected = unique(indicators_definitions_labels[indicators_definitions_labels$theme==input$theme, "indicator_label"])[1],
     )
+  })
+  
+  
+  # hide tab based on selected indicator
+  observeEvent(input$indicator, {
+    if(input$indicator == "High pollution days"){
+      showTab(inputId = "tabs", target = "Chart")
+      showTab(inputId = "tabs", target = "Definitions")
+      hideTab(inputId = "tabs", target = "Table")
+      hideTab(inputId = "tabs", target = "Map")
+      hideTab(inputId = "tabs", target = "Benchmark")
+      hide("city_wide_indicator") 
+    } else if(input$indicator == "Air pollution (by pollutant)"){
+      hideTab(inputId = "tabs", target = "Table")
+      hideTab(inputId = "tabs", target = "Map")
+      hideTab(inputId = "tabs", target = "Benchmark") 
+      hide("city_wide_indicator") 
+    } else if(input$indicator == "Air pollution (by sector)"){
+      hideTab(inputId = "tabs", target = "Table")
+      hideTab(inputId = "tabs", target = "Map")
+      hideTab(inputId = "tabs", target = "Benchmark") 
+      hide("city_wide_indicator") 
+    } else if(input$indicator == "Population exposure to PM 2.5"){
+      showTab(inputId = "tabs", target = "Benchmark") 
+      showTab(inputId = "tabs", target = "Definitions") 
+      hideTab(inputId = "tabs", target = "Table")
+      hideTab(inputId = "tabs", target = "Chart")
+      hideTab(inputId = "tabs", target = "Map")
+      show("city_wide_indicator") 
+    } else if(!input$indicator %in% c("Population exposure to PM 2.5","High pollution days","Air pollution (by pollutant)","Air pollution (by sector)")){
+      showTab(inputId = "tabs", target = "Table")
+      showTab(inputId = "tabs", target = "Chart")
+      showTab(inputId = "tabs", target = "Map")
+      showTab(inputId = "tabs", target = "Benchmark") 
+      show("city_wide_indicator") 
+    }
+    
   })
   
   
@@ -278,7 +386,7 @@ server <- function(input, output, session) {
     input$active_tab
     
     geo_name = input$city
-    print(geo_name)
+    
     
     # read boundaries -----
     aoi_boundary_name = boundary_georef[boundary_georef$geo_name == geo_name, "aoi_boundary_name"]
@@ -314,7 +422,17 @@ server <- function(input, output, session) {
     
     # get selected indicator
     
-    selected_indicator_label = input$indicator
+    if(input$indicator %in% c("High pollution days","Air pollution (by pollutant)")){
+      # since the label is used to extract data and create the maps we need to provide a field
+      # for which we have data to generate the maps even if we will not show these maps. We selected by defualt the
+      # (carbon monoxide) but it could be any other pollutant. In the future we need to find a a more appropriate way to
+      # avoid generating a map when this indicator is selected
+      selected_indicator_label = "High pollution days (carbon monoxide)"
+    } else{
+      selected_indicator_label = input$indicator
+    }
+    
+    
     
     selected_indicator_name = indicators_definitions %>% 
       filter(indicator_label %in% selected_indicator_label) %>% 
@@ -324,6 +442,7 @@ server <- function(input, output, session) {
     selected_indicator_legend = indicators_definitions %>% 
       filter(indicator_label %in% selected_indicator_label) %>% 
       pull(indicator_legend)
+    
     
     # get indicator values  -----
     
@@ -606,6 +725,7 @@ server <- function(input, output, session) {
                               pop_values,
                               na.color = "transparent",
                               reverse = TRUE)
+      
       
     }
     
@@ -932,8 +1052,16 @@ server <- function(input, output, session) {
       pull(selected_indicator_name) %>% 
       round(2)
     
+    # unit
+    city_wide_indicator_value_unit = "%"
+    
+    if(input$indicator == 'Nb days air pollution (carbon monoxide)'){
+      city_wide_indicator_value_unit = "days"
+    }
+    
+    # output plot
     output$city_wide_indicator <- renderText({
-      paste("<center>","<font size=5px; weight=500; color=\"#168A06\"><b>", city_wide_indicator_value, "%")
+      paste("<center>","<font size=5px; weight=500; color=\"#168A06\"><b>", city_wide_indicator_value, city_wide_indicator_value_unit)
     })
     
     #########################################
@@ -941,20 +1069,85 @@ server <- function(input, output, session) {
     
     # Table plot
     
-    table_plot = unit_indicators %>% 
-      drop_na(selected_indicator_name, geo_name) %>% 
-      as.data.frame() %>%
-      dplyr::select(-geometry) %>% 
-      dplyr::select(geo_name,selected_indicator_name) %>% 
-      mutate_if(is.numeric, round, 2) %>% 
-      arrange(desc(selected_indicator_name)) 
+    if(input$indicator == "High pollution days"){
+      table_plot = aoi_indicators %>% 
+        as.data.frame() %>%
+        dplyr::select(-geometry) %>% 
+        dplyr::select(geo_name,
+                      GRE_2_2_nb_exceedance_days_nitroge_dioxide,
+                      GRE_2_2_nb_exceedance_days_sulfur_dioxide,
+                      GRE_2_2_nb_exceedance_days_ozone,
+                      # exceedancedays.ozone,
+                      GRE_2_2_nb_exceedance_days_fine_particulate_matter,
+                      GRE_2_2_nb_exceedance_days_coarse_particulate_matter,
+                      GRE_2_2_nb_exceedance_days_coarse_carbon_monoxide) %>% 
+        mutate_if(is.numeric, round, 2) 
+    } else if(input$indicator %in%  c("Air pollution (by pollutant)","Air pollution (by sector)")){
+      table_plot = aoi_indicators %>% 
+        as.data.frame() %>%
+        dplyr::select(-geometry) %>% 
+        pivot_longer(
+          cols = bc_agl_2010:nmvoc_tro_2020,
+          names_to = c("gas", "sector", "year"),
+          names_pattern = "(.*)_(.*)_(.*)",
+          values_to = "value") %>% 
+        dplyr::select(geo_name,
+                      gas,
+                      sector, 
+                      year, 
+                      value) %>% 
+        filter(year == 2020,
+               sector != 'sum') %>% 
+        mutate_at("gas", 
+                  ~recode(.,
+                          "bc"='Black carbon', 
+                          'ch4'='Methane',
+                          'co' = 'Carbon monoxide',
+                          'co2' = 'Carbon dioxide',
+                          'nox' = 'Nitrogen oxides',
+                          'so2' = 'Sulfur dioxide',
+                          'oc' = 'Organic carbon',
+                          'nh3' = 'Ammonia',
+                          'nmvoc' = 'Non-methane volatile organic compounds')) %>% 
+        mutate_at("sector", 
+                  ~recode(.,
+                          "agl"='Agriculture livestock', 
+                          'ags'='Agriculture soils',
+                          'awb' = 'Agriculture waste burning',
+                          'ene' = 'Power generation',
+                          'fef' = 'Fugitives',
+                          'ind' = 'Industry',
+                          'res' = 'Residential, commercial, and other combustion',
+                          'shp' = 'Ships',
+                          'slv' = 'Solvents',
+                          'sum' = 'All sources',
+                          'swd' = 'Solid waste and wastewater',
+                          'tnr' = 'Off-road transportation',
+                          'tro' = 'Road transportation'))
+    } else{
+      table_plot = unit_indicators %>% 
+        drop_na(selected_indicator_name, geo_name) %>% 
+        as.data.frame() %>%
+        dplyr::select(-geometry) %>% 
+        dplyr::select(geo_name,selected_indicator_name) %>% 
+        mutate_if(is.numeric, round, 2) %>% 
+        arrange(desc(selected_indicator_name)) 
+      
+      # remove empty city name
+      table_plot$geo_name[table_plot$geo_name==""]<-NA
+      table_plot = table_plot %>% 
+        drop_na(geo_name)
+      
+      names(table_plot) = c("City name",selected_indicator_label)
+      
+      # keep distinct city_name
+      table_plot = table_plot %>% 
+        distinct(`City name`, .keep_all = TRUE)
+    }
     
-    # remove empty city name
-    table_plot$geo_name[table_plot$geo_name==""]<-NA
-    table_plot = table_plot %>% 
-      drop_na(geo_name)
+    print(head(aoi_indicators))
+    print(table_plot)
     
-    names(table_plot) = c("City name",selected_indicator_label)
     
     output$indicator_table <- DT::renderDataTable(
       DT::datatable(table_plot, 
@@ -969,7 +1162,8 @@ server <- function(input, output, session) {
     )
     
     
-    # output data to download
+    #########################################
+    # DOwnload tabular table ----
     output$downloadData <- downloadHandler(
       filename = function() {
         paste(input$city,"-", input$indicator,"-", Sys.Date(), ".csv", sep="")
@@ -979,14 +1173,80 @@ server <- function(input, output, session) {
       }
     )
     
+    
+    
     #########################################
     ### Chart ----
     
-    # keep distinct city_name
-    table_plot = table_plot %>% 
-      distinct(`City name`, .keep_all = TRUE)
+    # # keep distinct city_name
+    # table_plot = table_plot %>% 
+    #   distinct(`City name`, .keep_all = TRUE)
     
-    output$indicator_chart <- renderPlotly({
+    # output$indicator_chart <- renderPlotly({
+    #   fig = plot_ly(x = table_plot$`City name`,
+    #                 y = table_plot[[colnames(table_plot)[2]]],
+    #                 type = "bar",
+    #                 orientation = "v",
+    #                 name = names(table_plot)[2],
+    #                 color = I("green4")) %>% 
+    #     layout(yaxis = list(title = names(table_plot)[2]),
+    #            xaxis = list(title = 'Cities',categoryorder = "total descending"))
+    #   
+    #   fig
+    #   
+    # })
+    # 
+    
+    if(input$indicator == "High pollution days"){
+      fig = plot_ly(x = c("Nitrogen dioxide",
+                          "Sulfur dioxide",
+                          "Ozone",
+                          "Fine particulate matter",
+                          "Coarse particulate matter",
+                          "Carbon monoxide"),
+                    y = as.numeric(table_plot[1, c(2,3,4,5,6,7)]),
+                    type = "bar",
+                    orientation = "v",
+                    # name = names(table_plot)[2],
+                    color = I("green4")) %>% 
+        layout(yaxis = list(title = "Annual number of days air pollutants <br> are above WHO air quality standards"),
+               xaxis = list(title = 'Air pollutants',categoryorder = "total descending"))
+      
+      
+    } else if(input$indicator == "Air pollution (by pollutant)"){
+      fig <- plot_ly(table_plot, 
+                     labels = ~gas, 
+                     values = ~value, 
+                     type = 'pie',
+                     textposition = 'inside',
+                     textinfo = 'label+percent')
+      
+      fig <- fig %>% layout(title = 'Air pollution by pollutant (2020)',
+                            xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+                            yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+                            legend = list(orientation = "h",   # show entries horizontally
+                                          xanchor = "center",  # use center of legend as anchor
+                                          x = 0.5)
+      )
+      
+      
+    } else if(input$indicator == "Air pollution (by sector)"){
+      fig <- plot_ly(table_plot, 
+                     labels = ~sector, 
+                     values = ~value, 
+                     type = 'pie',
+                     textposition = 'inside',
+                     textinfo = 'label+percent')
+      
+      fig <- fig %>% layout(title = 'Sectors contribution to air pollution (2020)',
+                            xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+                            yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+                            legend = list(orientation = "h",
+                                          xanchor = "center",  # use center of legend as anchor
+                                          x = 0.5))
+      
+      
+    }else{
       fig = plot_ly(x = table_plot$`City name`,
                     y = table_plot[[colnames(table_plot)[2]]],
                     type = "bar",
@@ -996,6 +1256,9 @@ server <- function(input, output, session) {
         layout(yaxis = list(title = names(table_plot)[2]),
                xaxis = list(title = 'Cities',categoryorder = "total descending"))
       
+    }
+    
+    output$indicator_chart <- renderPlotly({
       fig
       
     })
@@ -1005,16 +1268,12 @@ server <- function(input, output, session) {
     
     # cities comparison ----
     
-    print(indicators_comparison)
-    
     indicators_comparison = indicators_comparison %>% 
       as.data.frame() %>%
       dplyr::select(geo_name,selected_indicator_name) %>% 
       drop_na(selected_indicator_name, geo_name) %>% 
       mutate_if(is.numeric, round, 2) %>% 
       arrange(desc(selected_indicator_name)) 
-    
-    print(indicators_comparison)
     
     # change names
     names(indicators_comparison) = c("City name",selected_indicator_label)
@@ -1034,12 +1293,12 @@ server <- function(input, output, session) {
                     orientation = "v",
                     name = names(indicators_comparison)[2],
                     marker = list(color = city_color)) %>% 
-        layout(yaxis = list(title = names(indicators_comparison)[2]),
+        layout(yaxis = list(title = selected_indicator_legend), #names(indicators_comparison)[2]
                xaxis = list(title = 'Cities',categoryorder = "total descending"),
                annotations = list(
                  x = 10,
-                 y = cities_indicator_avg, 
-                 text = paste("Cities' averrage: ", cities_indicator_avg, " %", sep = ""),
+                 y = cities_indicator_avg+cities_indicator_avg*0.1, 
+                 text = paste("Cities' averrage: ", cities_indicator_avg, city_wide_indicator_value_unit, sep = ""),
                  showarrow = FALSE,
                  xanchor = "right"
                ))
@@ -1059,23 +1318,25 @@ server <- function(input, output, session) {
     
     
     
+    
     #########################################
     ### Indicator definition text  ----
     
+    
     indicator_def_text = indicators_definitions %>% 
-      filter(indicator_label == selected_indicator_label) %>% 
+      filter(indicator_label == input$indicator) %>% 
       pull(indicator_definition)
     
     indicator_data_sources = indicators_definitions %>% 
-      filter(indicator_label == selected_indicator_label) %>%  
+      filter(indicator_label == input$indicator) %>%  
       pull(data_sources)
     
     indicator_importance = indicators_definitions %>% 
-      filter(indicator_label == selected_indicator_label) %>%  
+      filter(indicator_label == input$indicator) %>%  
       pull(importance)
     
     indicator_methods = indicators_definitions %>% 
-      filter(indicator_label == selected_indicator_label) %>%  
+      filter(indicator_label == input$indicator) %>%  
       pull(methods)
     
     # plot text 
@@ -1098,6 +1359,8 @@ server <- function(input, output, session) {
             "<font weight=50; color=\"#454545\"><b>", indicator_methods
       )
     })
+    
+    
     
   })
   
