@@ -174,10 +174,46 @@ indicators = indicators %>%
             by = "geo_id") 
 
 
+# GRE_4 ----
+indicators_GRE_4 = read.csv(paste(aws_s3_path,
+                                  "data/indicators/cities_indicators_v2test.csv",
+                                  sep = ""),
+                            encoding="UTF-8")
 
+indicators = indicators %>% 
+  dplyr::select(-starts_with("GRE_4"))
 
+indicators = indicators %>% 
+  left_join(indicators_GRE_4[,c("geo_id",
+                                "GRE_4_1_percentFloodProneinBuiltup2050",
+                                #"GRE_4_2_percentChangeinMaxDailyPrecip2020to2050",
+                                "GRE_4_3_percentBuiltupWithin1mAboveDrainage",
+                                "GRE_4_4_percentImperviousinBuiltup2018",
+                                "GRE_4_5_percentBuiltupWOvegetationcover2020",
+                                "GRE_4_6_percentRiparianZonewoVegorWatercover2020",
+                                "GRE_4_7_percentSteepSlopesWOvegetationcover2020")],
+            by = "geo_id") %>% 
+  mutate(GRE_4_1_percentFloodProneinBuiltup2050 = 100 * GRE_4_1_percentFloodProneinBuiltup2050,
+         # GRE_4_2_percentChangeinMaxDailyPrecip2020to2050 = 100 * GRE_4_2_percentChangeinMaxDailyPrecip2020to2050,
+         GRE_4_3_percentBuiltupWithin1mAboveDrainage = 100 * GRE_4_3_percentBuiltupWithin1mAboveDrainage,
+         GRE_4_4_percentImperviousinBuiltup2018 = 100 * GRE_4_4_percentImperviousinBuiltup2018,
+         GRE_4_5_percentBuiltupWOvegetationcover2020 = 100 * GRE_4_5_percentBuiltupWOvegetationcover2020,
+         GRE_4_6_percentRiparianZonewoVegorWatercover2020 = 100 * GRE_4_6_percentRiparianZonewoVegorWatercover2020,
+         GRE_4_7_percentSteepSlopesWOvegetationcover2020 = 100 * GRE_4_7_percentSteepSlopesWOvegetationcover2020) 
 
-# keep distinct geo_id
+# GRE_4_2 ----
+indicators_GRE_4_2 = read.csv(paste(aws_s3_path,
+                                    "data/indicators/dev/cities_indicators_GRE_4_2.csv",
+                                    sep = ""),
+                              encoding="UTF-8")
+
+indicators = indicators %>% 
+  left_join(indicators_GRE_4_2[,c("geo_id",
+                                  "GRE_4_2_percentChangeinMaxDailyPrecip2020to2050")],
+            by = "geo_id") %>% 
+  mutate(GRE_4_2_percentChangeinMaxDailyPrecip2020to2050 = 100 * GRE_4_2_percentChangeinMaxDailyPrecip2020to2050)
+
+# keep distinct geo_id ----
 indicators = indicators %>% 
   distinct(geo_id, .keep_all = TRUE)
 
@@ -363,9 +399,9 @@ server <- function(input, output, session) {
     } else if(input$indicator == "Population exposure to PM 2.5"){
       showTab(inputId = "tabs", target = "Benchmark") 
       showTab(inputId = "tabs", target = "Definitions") 
-      hideTab(inputId = "tabs", target = "Table")
-      hideTab(inputId = "tabs", target = "Chart")
-      hideTab(inputId = "tabs", target = "Map")
+      showTab(inputId = "tabs", target = "Table")
+      showTab(inputId = "tabs", target = "Chart")
+      showTab(inputId = "tabs", target = "Map")
       show("city_wide_indicator") 
     } else if(!input$indicator %in% c("Population exposure to PM 2.5","High pollution days","Air pollution (by pollutant)","Air pollution (by sector)")){
       showTab(inputId = "tabs", target = "Table")
@@ -466,8 +502,8 @@ server <- function(input, output, session) {
       lapply(htmltools::HTML)
     
     
-    if(input$indicator == "Open space for public use" | input$indicator == "Surface reflectivity" | input$indicator == "Tree cover in built-up areas" ){
-      # layers: esa world cover  -----
+    # layers: esa world cover
+    if(input$indicator %in% c("Open space for public use","Surface reflectivity","Tree cover in built-up areas","Exposure to coastal and river flooding")){
       
       esa_worldcover_data_path = paste("/vsicurl/https://cities-cities4forests.s3.eu-west-3.amazonaws.com/",
                                        "data/land_use/esa_world_cover/v_0/",
@@ -521,9 +557,8 @@ server <- function(input, output, session) {
       
     }
     
+    # read OSM open space ----
     if(input$indicator == "Open space for public use" | input$indicator == "Access to public open space"){
-      
-      # read OSM open space ----
       osm_open_space = st_read(paste(aws_s3_path,
                                      "data/open_space/openstreetmap/v_0/",
                                      geo_name,
@@ -535,20 +570,28 @@ server <- function(input, output, session) {
       
     }
     
+    # layers: worldpop  -----
     if(input$indicator == "Access to public open space"){
       
-      # layers: worldpop  -----
+      if(geo_name == "MEX-Mexico_City"){
+        pop_data_path = paste("https://cities-cities4forests.s3.eu-west-3.amazonaws.com/",
+                              "data/population/worldpop/v_0/",
+                              geo_name,
+                              "-",
+                              aoi_boundary_name,
+                              "-WorldPop-population.tif",
+                              sep = "")
+      } else {
+        pop_data_path = paste("/vsicurl/https://cities-cities4forests.s3.eu-west-3.amazonaws.com/",
+                              "data/population/worldpop/v_0/",
+                              geo_name,
+                              "-",
+                              aoi_boundary_name,
+                              "-WorldPop-population.tif",
+                              sep = "")
+        
+      }
       
-      
-      pop_data_path = paste("/vsicurl/https://cities-cities4forests.s3.eu-west-3.amazonaws.com/",
-                            "data/population/worldpop/v_0/",
-                            geo_name,
-                            "-",
-                            aoi_boundary_name,
-                            "-WorldPop-population.tif",
-                            sep = "")
-      
-      print(pop_data_path)
       
       # collect raster data
       city_pop = raster(pop_data_path)
@@ -591,18 +634,30 @@ server <- function(input, output, session) {
                                          reverse = TRUE)
     }
     
+    # layers: worldpop  & Layers: tml ---- -----
     if(input$indicator == "Percent of Tree cover" | input$indicator == "Access to tree cover"){
       
-      # layers: worldpop  -----
       
+      # layers: worldpop
       
-      pop_data_path = paste("/vsicurl/https://cities-cities4forests.s3.eu-west-3.amazonaws.com/",
-                            "data/population/worldpop/v_0/",
-                            geo_name,
-                            "-",
-                            aoi_boundary_name,
-                            "-WorldPop-population.tif",
-                            sep = "")
+      if(geo_name == "MEX-Mexico_City"){
+        pop_data_path = paste("https://cities-cities4forests.s3.eu-west-3.amazonaws.com/",
+                              "data/population/worldpop/v_0/",
+                              geo_name,
+                              "-",
+                              aoi_boundary_name,
+                              "-WorldPop-population.tif",
+                              sep = "")
+      } else {
+        pop_data_path = paste("/vsicurl/https://cities-cities4forests.s3.eu-west-3.amazonaws.com/",
+                              "data/population/worldpop/v_0/",
+                              geo_name,
+                              "-",
+                              aoi_boundary_name,
+                              "-WorldPop-population.tif",
+                              sep = "")
+        
+      }
       
       # collect raster data
       city_pop = raster(pop_data_path)
@@ -618,7 +673,7 @@ server <- function(input, output, session) {
                               na.color = "transparent",
                               reverse = TRUE)
       
-      # Layers: tml ----
+      # Layers: tml --
       
       tml_data_path = paste("/vsicurl/https://cities-cities4forests.s3.eu-west-3.amazonaws.com/data/tree_cover/tree_mosaic_land/v_0/",
                             geo_name,
@@ -669,9 +724,10 @@ server <- function(input, output, session) {
       
     }
     
+    # Layers: tml ----
     if(input$indicator == "Tree cover in built-up areas" ){
       
-      # Layers: tml ----
+      # Layers: tml -
       
       tml_data_path = paste("/vsicurl/https://cities-cities4forests.s3.eu-west-3.amazonaws.com/data/tree_cover/tree_mosaic_land/v_0/",
                             geo_name,
@@ -697,18 +753,30 @@ server <- function(input, output, session) {
       
     }
     
+    # layers: worldpop  -----
     if(input$indicator == "Population exposure to PM 2.5"){
       
-      # layers: worldpop  -----
+      # layers: worldpop  ---
       
       
-      pop_data_path = paste("/vsicurl/https://cities-cities4forests.s3.eu-west-3.amazonaws.com/",
-                            "data/population/worldpop/v_0/",
-                            geo_name,
-                            "-",
-                            aoi_boundary_name,
-                            "-WorldPop-population.tif",
-                            sep = "")
+      if(geo_name == "MEX-Mexico_City"){
+        pop_data_path = paste("https://cities-cities4forests.s3.eu-west-3.amazonaws.com/",
+                              "data/population/worldpop/v_0/",
+                              geo_name,
+                              "-",
+                              aoi_boundary_name,
+                              "-WorldPop-population.tif",
+                              sep = "")
+      } else {
+        pop_data_path = paste("/vsicurl/https://cities-cities4forests.s3.eu-west-3.amazonaws.com/",
+                              "data/population/worldpop/v_0/",
+                              geo_name,
+                              "-",
+                              aoi_boundary_name,
+                              "-WorldPop-population.tif",
+                              sep = "")
+        
+      }
       
       print(pop_data_path)
       
@@ -725,6 +793,37 @@ server <- function(input, output, session) {
                               pop_values,
                               na.color = "transparent",
                               reverse = TRUE)
+      
+      
+    }
+    
+    # layers: Flooding  -----
+    if(input$indicator == "Exposure to coastal and river flooding"){
+      
+      # layers: Flooding  --
+      flood_data_path = paste("/vsicurl/https://cities-cities4forests.s3.eu-west-3.amazonaws.com/",
+                              "data/flooding/aqueduct/v_0/",
+                              geo_name,
+                              "-",
+                              aoi_boundary_name,
+                              "-flood-innundation-2050-rp0100.tif",
+                              sep = "")
+      
+      
+      # collect raster data
+      city_flood = raster(flood_data_path)
+      
+      city_flood_boundary = raster::mask(city_flood,
+                                         boundary_aoi)
+      
+      # color flood 
+      flood_values = values(city_flood_boundary)[!is.na(values(city_flood_boundary))]
+      
+      pal_flood <- colorNumeric("Blues", 
+                                flood_values,
+                                na.color = "transparent",
+                                reverse = FALSE)
+      
       
       
     }
@@ -789,7 +888,6 @@ server <- function(input, output, session) {
       ) 
     
     # Open space for public use - Add layers ----
-    
     if(input$indicator == "Open space for public use"){
       m = m %>% 
         # plot layer: OSM
@@ -982,7 +1080,6 @@ server <- function(input, output, session) {
         hideGroup(c("Tree cover","Land cover types")) 
     }
     
-    
     # Population exposure to pm2.5 - Add layers ----
     if(input$indicator == "Population exposure to PM 2.5"){
       m = m %>% 
@@ -1011,11 +1108,7 @@ server <- function(input, output, session) {
         hideGroup(c("Population")) 
     }
     
-    # center map  
-    output$indicator_map <- renderLeaflet({
-      m
-    })
-    
+    # Surface reflectivity ----
     if(input$indicator == "Surface reflectivity"){
       m = m %>% 
         # plot layer: ESA world cover ----
@@ -1041,7 +1134,50 @@ server <- function(input, output, session) {
         hideGroup(c("Land cover types")) 
     }
     
+    # Exposure to coastal and river flooding -----
+    if(input$indicator == "Exposure to coastal and river flooding"){
+      m = m %>% 
+        # plot layer: ESA world cover ----
+      addRasterImage(city_esa_worldcover,
+                     colors = pal_worldcover,
+                     opacity = 1,
+                     maxBytes = 100 * 1024 * 1024,
+                     project=FALSE,
+                     group = "Land cover types") %>%
+        addLegend(colors = worldcover_col,
+                  labels = worldcover_labels,
+                  title = "World Cover",
+                  group = "Land cover types",
+                  position = "bottomleft",
+                  opacity = 1) %>%
+        # Raster of flooding --
+        addRasterImage(city_flood,
+                       colors = pal_flood,
+                       opacity = 1,
+                       maxBytes = 20 * 1024 * 1024,
+                       project=FALSE,
+                       group = "Coastal/riverine flooding") %>%
+        addLegend(pal = pal_flood,
+                  values = flood_values, 
+                  title = "Inundation depth (decimeters)",
+                  group = "Coastal/riverine flooding",
+                  position = "bottomleft") %>% 
+        # Layers control
+        addLayersControl(
+          overlayGroups = c("Administrative boundaries",
+                            selected_indicator_label,
+                            "Land cover types",
+                            "Coastal/riverine flooding"),
+          options = layersControlOptions(collapsed = FALSE)
+        ) %>% 
+        hideGroup(c("Coastal/riverine flooding",
+                    "Land cover types")) 
+    }
     
+    # center map  
+    output$indicator_map <- renderLeaflet({
+      m
+    })
     
     #########################################
     ### Main indicators ----
@@ -1145,8 +1281,6 @@ server <- function(input, output, session) {
         distinct(`City name`, .keep_all = TRUE)
     }
     
-    print(head(aoi_indicators))
-    print(table_plot)
     
     
     output$indicator_table <- DT::renderDataTable(
@@ -1249,11 +1383,12 @@ server <- function(input, output, session) {
     }else{
       fig = plot_ly(x = table_plot$`City name`,
                     y = table_plot[[colnames(table_plot)[2]]],
+                    # y = selected_indicator_legend, 
                     type = "bar",
                     orientation = "v",
                     name = names(table_plot)[2],
                     color = I("green4")) %>% 
-        layout(yaxis = list(title = names(table_plot)[2]),
+        layout(yaxis = list(title = selected_indicator_legend ), #names(table_plot)[2]),
                xaxis = list(title = 'Cities',categoryorder = "total descending"))
       
     }
