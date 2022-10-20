@@ -65,43 +65,176 @@ cities = unique(boundary_georef$geo_name)
 # read indicator ------------
 
 
+##########################################################
+
+# # Read indicators v1 -----
+# 
 # indicators = read.csv(paste(aws_s3_path,
-#                             "data/indicators/cities_indicators.csv",
+#                             "data/indicators/cities_indicators_v2.csv",
 #                             sep = ""),
 #                       encoding="UTF-8")
-# 
-# 
-# 
-# indicators_test = read.csv(paste(aws_s3_path,
-#                                  "data/indicators/cities_indicators_erictest.csv",
-#                                  sep = ""),
-#                            encoding="UTF-8")
-# 
-# indicators = indicators %>% 
-#   left_join(indicators_test[,c("geo_id",
-#                                "GRE_3_2_percentPopwOpenSpaceAccess",
-#                                "GRE_3_3_percentPopwTreeCoverAcess",
-#                                "GRE_1_3_percentBuiltwLowAlbedo")],
-#             by = "geo_id") 
 # 
 # indicators = indicators %>% 
 #   mutate(GRE_3_1_percentOpenSpaceinBuiltup = 100 * GRE_3_1_percentOpenSpaceinBuiltup,
 #          GRE_3_2_percentPopwOpenSpaceAccess = 100 * GRE_3_2_percentPopwOpenSpaceAccess,
-#          GRE_3_3_percentPopwTreeCoverAcess = 100 * GRE_3_3_percentPopwTreeCoverAcess,
-#          GRE_1_3_percentBuiltwLowAlbedo = 100 * GRE_1_3_percentBuiltwLowAlbedo) 
+#          GRE_3_3_percentPopwTreeCoverAcess = 100 * GRE_3_3_percentPopwTreeCoverAcess) 
+# 
+# # GRE_1_4 ----
+# indicators_GRE_1_4 = read.csv(paste(aws_s3_path,
+#                                     "data/indicators/dev/cities_indicators_GRE_1_4.csv",
+#                                     sep = ""),
+#                               encoding="UTF-8")
+# 
+# indicators = indicators %>% 
+#   left_join(indicators_GRE_1_4,
+#             by = "geo_id")  
+# # mutate(GRE_1_4_percent_tree_cover_builtup_areas = 100 - GRE_1_4_percent_tree_cover_builtup_areas)
+# 
+# # GRE_1_3 ----
+# indicators_GRE_1_3 = read.csv(paste(aws_s3_path,
+#                                     "data/indicators/dev/cities_indicators_GRE_1_3.csv",
+#                                     sep = ""),
+#                               encoding="UTF-8")
+# 
+# indicators = indicators %>% 
+#   left_join(indicators_GRE_1_3[,c("geo_id","GRE_1_3_percentBuiltwLowAlbedo")],
+#             by = "geo_id") %>% 
+#   mutate(GRE_1_3_percentBuiltwLowAlbedo = 100 * GRE_1_3_percentBuiltwLowAlbedo)
+# 
+# # GRE_2_1 ----
+# indicators_GRE_2_1 = read.csv(paste(aws_s3_path,
+#                                     "data/indicators/dev/cities_indicators_GRE_2_1.csv",
+#                                     sep = ""),
+#                               encoding="UTF-8")
+# 
+# # indicators_GRE_2_1 = indicators_GRE_2_1 %>% 
+# #   pivot_longer(
+# #     cols = bc_agl_2010:nmvoc_tro_2020,
+# #     names_to = c("gas", "sector", "year"),
+# #     names_pattern = "(.*)_(.*)_(.*)",
+# #     values_to = "value") 
+# 
+# indicators = indicators %>% 
+#   left_join(indicators_GRE_2_1,
+#             by = "geo_id")
+# 
+# # GRE_2_3 ----
+# indicators_GRE_2_3 = read.csv(paste(aws_s3_path,
+#                                     "data/indicators/dev/cities_indicators_GRE_2_3.csv",
+#                                     sep = ""),
+#                               encoding="UTF-8")
+# 
+# indicators = indicators %>% 
+#   left_join(indicators_GRE_2_3[,c("geo_id","GRE_2_3_population_exposure_pm25")],
+#             by = "geo_id") 
+# 
+# # GRE_2_2 ----
+# indicators_GRE_2_2 = read.csv(paste(aws_s3_path,
+#                                     "data/indicators/dev/cities_indicators_GRE_2_2.csv",
+#                                     sep = ""),
+#                               encoding="UTF-8")
+# 
+# # indicators = indicators %>% 
+# #   left_join(indicators_GRE_2_2[,c("geo_id","GRE_2_2_nb_exceedance_days_coarse_carbon_monoxide")],
+# #             by = "geo_id") 
+# 
+# indicators = indicators %>% 
+#   left_join(indicators_GRE_2_2[,c("geo_id",
+#                                   "GRE_2_2_nb_exceedance_days_nitroge_dioxide",
+#                                   "GRE_2_2_nb_exceedance_days_sulfur_dioxide",
+#                                   # "exceedancedays.ozone",
+#                                   "GRE_2_2_nb_exceedance_days_ozone",
+#                                   "GRE_2_2_nb_exceedance_days_fine_particulate_matter",
+#                                   "GRE_2_2_nb_exceedance_days_coarse_particulate_matter",
+#                                   "GRE_2_2_nb_exceedance_days_coarse_carbon_monoxide")],
+#             by = "geo_id") 
+# 
+# 
+# # GRE_4 ----
+# indicators_GRE_4 = read.csv(paste(aws_s3_path,
+#                                   "data/indicators/cities_indicators_v2test.csv",
+#                                   sep = ""),
+#                             encoding="UTF-8")
+# 
+# indicators = indicators %>% 
+#   dplyr::select(-starts_with("GRE_4"))
+# 
+# indicators = indicators %>% 
+#   left_join(indicators_GRE_4[,c("geo_id",
+#                                 "GRE_4_1_percentFloodProneinBuiltup2050",
+#                                 #"GRE_4_2_percentChangeinMaxDailyPrecip2020to2050",
+#                                 "GRE_4_3_percentBuiltupWithin1mAboveDrainage",
+#                                 "GRE_4_4_percentImperviousinBuiltup2018",
+#                                 "GRE_4_5_percentBuiltupWOvegetationcover2020",
+#                                 "GRE_4_6_percentRiparianZonewoVegorWatercover2020",
+#                                 "GRE_4_7_percentSteepSlopesWOvegetationcover2020")],
+#             by = "geo_id") %>% 
+#   mutate(GRE_4_1_percentFloodProneinBuiltup2050 = 100 * GRE_4_1_percentFloodProneinBuiltup2050,
+#          # GRE_4_2_percentChangeinMaxDailyPrecip2020to2050 = 100 * GRE_4_2_percentChangeinMaxDailyPrecip2020to2050,
+#          GRE_4_3_percentBuiltupWithin1mAboveDrainage = 100 * GRE_4_3_percentBuiltupWithin1mAboveDrainage,
+#          GRE_4_4_percentImperviousinBuiltup2018 = 100 * GRE_4_4_percentImperviousinBuiltup2018,
+#          GRE_4_5_percentBuiltupWOvegetationcover2020 = 100 * GRE_4_5_percentBuiltupWOvegetationcover2020,
+#          GRE_4_6_percentRiparianZonewoVegorWatercover2020 = 100 * GRE_4_6_percentRiparianZonewoVegorWatercover2020,
+#          GRE_4_7_percentSteepSlopesWOvegetationcover2020 = 100 * GRE_4_7_percentSteepSlopesWOvegetationcover2020) 
+# 
+# # GRE_4_2 ----
+# indicators_GRE_4_2 = read.csv(paste(aws_s3_path,
+#                                     "data/indicators/dev/cities_indicators_GRE_4_2.csv",
+#                                     sep = ""),
+#                               encoding="UTF-8")
+# 
+# indicators = indicators %>% 
+#   left_join(indicators_GRE_4_2[,c("geo_id",
+#                                   "GRE_4_2_percentChangeinMaxDailyPrecip2020to2050")],
+#             by = "geo_id") %>% 
+#   mutate(GRE_4_2_percentChangeinMaxDailyPrecip2020to2050 = 100 * GRE_4_2_percentChangeinMaxDailyPrecip2020to2050)
+# 
+# # keep distinct geo_id ----
+# indicators = indicators %>% 
+#   distinct(geo_id, .keep_all = TRUE)
+
+##########################################################
+
+# read indicators v2 -----
+
+indicators_v2 = read.csv(paste(aws_s3_path,
+                               "data/indicators/cities_indicators_v2test.csv",
+                               sep = ""),
+                         encoding="UTF-8")
 
 
-# Read v2 indicators
+indicators = indicators_v2 %>% 
+  dplyr::select(geo_id,
+                geo_level,
+                geo_name,
+                geo_parent_name,
+                # GRE_1_1_percentChangeinDaysAbove35C2020to2050,
+                GRE_1_2_percentBuiltupwHighLST.2013to2022meanofmonthwhottestday,
+                GRE_1_3_percentBuiltwLowAlbedo,
+                #GRE_1_4_percentBuiltupWithoutTreeCover,
+                GRE_3_1_percentOpenSpaceinBuiltup,
+                GRE_3_2_percentPopwOpenSpaceAccess,
+                GRE_3_3_percentPopwTreeCoverAccess,
+                GRE_4_1_percentFloodProneinBuiltup2050,
+                # GRE_4_2_percentChangeinMaxDailyPrecip2020to2050,
+                GRE_4_3_percentBuiltupWithin1mAboveDrainage,
+                GRE_4_4_percentImperviousinBuiltup2018,
+                GRE_4_5_percentBuiltupWOvegetationcover2020,
+                GRE_4_6_percentRiparianZonewoVegorWatercover2020,
+                GRE_4_7_percentSteepSlopesWOvegetationcover2020) %>% 
+  mutate_at(vars(matches("GRE")), ~ .* 100) 
 
-indicators = read.csv(paste(aws_s3_path,
-                            "data/indicators/cities_indicators_v2.csv",
-                            sep = ""),
-                      encoding="UTF-8")
+# process GRE_1_1 -----
+
+indicators_v2_GRE_1_1 = indicators_v2 %>% 
+  drop_na(GRE_1_1_percentChangeinDaysAbove35C2020to2050) %>% 
+  dplyr::select(geo_parent_name,
+                GRE_1_1_percentChangeinDaysAbove35C2020to2050) %>% 
+  mutate_at(vars(matches("GRE")), ~ .* 100)
 
 indicators = indicators %>% 
-  mutate(GRE_3_1_percentOpenSpaceinBuiltup = 100 * GRE_3_1_percentOpenSpaceinBuiltup,
-         GRE_3_2_percentPopwOpenSpaceAccess = 100 * GRE_3_2_percentPopwOpenSpaceAccess,
-         GRE_3_3_percentPopwTreeCoverAcess = 100 * GRE_3_3_percentPopwTreeCoverAcess) 
+  right_join(indicators_v2_GRE_1_1,
+             by = "geo_parent_name") 
 
 # GRE_1_4 ----
 indicators_GRE_1_4 = read.csv(paste(aws_s3_path,
@@ -109,21 +242,16 @@ indicators_GRE_1_4 = read.csv(paste(aws_s3_path,
                                     sep = ""),
                               encoding="UTF-8")
 
+indicators_GRE_1_4 = indicators_GRE_1_4 %>% 
+  dplyr::select(geo_id,
+                GRE_1_4_percent_tree_cover_builtup_areas) %>% 
+  mutate(GRE_1_4_percent_builtup_areas_without_tree_cover = 100 - GRE_1_4_percent_tree_cover_builtup_areas)
+
+
 indicators = indicators %>% 
   left_join(indicators_GRE_1_4,
-            by = "geo_id")  
-# mutate(GRE_1_4_percent_tree_cover_builtup_areas = 100 - GRE_1_4_percent_tree_cover_builtup_areas)
+            by = "geo_id")
 
-# GRE_1_3 ----
-indicators_GRE_1_3 = read.csv(paste(aws_s3_path,
-                                    "data/indicators/dev/cities_indicators_GRE_1_3.csv",
-                                    sep = ""),
-                              encoding="UTF-8")
-
-indicators = indicators %>% 
-  left_join(indicators_GRE_1_3[,c("geo_id","GRE_1_3_percentBuiltwLowAlbedo")],
-            by = "geo_id") %>% 
-  mutate(GRE_1_3_percentBuiltwLowAlbedo = 100 * GRE_1_3_percentBuiltwLowAlbedo)
 
 # GRE_2_1 ----
 indicators_GRE_2_1 = read.csv(paste(aws_s3_path,
@@ -142,6 +270,25 @@ indicators = indicators %>%
   left_join(indicators_GRE_2_1,
             by = "geo_id")
 
+
+
+# GRE_2_2 ----
+indicators_GRE_2_2 = read.csv(paste(aws_s3_path,
+                                    "data/indicators/dev/cities_indicators_GRE_2_2.csv",
+                                    sep = ""),
+                              encoding="UTF-8")
+
+indicators = indicators %>% 
+  left_join(indicators_GRE_2_2[,c("geo_id",
+                                  "GRE_2_2_nb_exceedance_days_nitroge_dioxide",
+                                  "GRE_2_2_nb_exceedance_days_sulfur_dioxide",
+                                  "GRE_2_2_nb_exceedance_days_ozone",
+                                  # "exceedancedays.ozone",
+                                  "GRE_2_2_nb_exceedance_days_fine_particulate_matter",
+                                  "GRE_2_2_nb_exceedance_days_coarse_particulate_matter",
+                                  "GRE_2_2_nb_exceedance_days_coarse_carbon_monoxide")],
+            by = "geo_id") 
+
 # GRE_2_3 ----
 indicators_GRE_2_3 = read.csv(paste(aws_s3_path,
                                     "data/indicators/dev/cities_indicators_GRE_2_3.csv",
@@ -150,56 +297,8 @@ indicators_GRE_2_3 = read.csv(paste(aws_s3_path,
 
 indicators = indicators %>% 
   left_join(indicators_GRE_2_3[,c("geo_id","GRE_2_3_population_exposure_pm25")],
-            by = "geo_id") 
-
-# GRE_2_2 ----
-indicators_GRE_2_2 = read.csv(paste(aws_s3_path,
-                                    "data/indicators/dev/cities_indicators_GRE_2_2.csv",
-                                    sep = ""),
-                              encoding="UTF-8")
-
-# indicators = indicators %>% 
-#   left_join(indicators_GRE_2_2[,c("geo_id","GRE_2_2_nb_exceedance_days_coarse_carbon_monoxide")],
-#             by = "geo_id") 
-
-indicators = indicators %>% 
-  left_join(indicators_GRE_2_2[,c("geo_id",
-                                  "GRE_2_2_nb_exceedance_days_nitroge_dioxide",
-                                  "GRE_2_2_nb_exceedance_days_sulfur_dioxide",
-                                  # "exceedancedays.ozone",
-                                  "GRE_2_2_nb_exceedance_days_ozone",
-                                  "GRE_2_2_nb_exceedance_days_fine_particulate_matter",
-                                  "GRE_2_2_nb_exceedance_days_coarse_particulate_matter",
-                                  "GRE_2_2_nb_exceedance_days_coarse_carbon_monoxide")],
-            by = "geo_id") 
-
-
-# GRE_4 ----
-indicators_GRE_4 = read.csv(paste(aws_s3_path,
-                                  "data/indicators/cities_indicators_v2test.csv",
-                                  sep = ""),
-                            encoding="UTF-8")
-
-indicators = indicators %>% 
-  dplyr::select(-starts_with("GRE_4"))
-
-indicators = indicators %>% 
-  left_join(indicators_GRE_4[,c("geo_id",
-                                "GRE_4_1_percentFloodProneinBuiltup2050",
-                                #"GRE_4_2_percentChangeinMaxDailyPrecip2020to2050",
-                                "GRE_4_3_percentBuiltupWithin1mAboveDrainage",
-                                "GRE_4_4_percentImperviousinBuiltup2018",
-                                "GRE_4_5_percentBuiltupWOvegetationcover2020",
-                                "GRE_4_6_percentRiparianZonewoVegorWatercover2020",
-                                "GRE_4_7_percentSteepSlopesWOvegetationcover2020")],
             by = "geo_id") %>% 
-  mutate(GRE_4_1_percentFloodProneinBuiltup2050 = 100 * GRE_4_1_percentFloodProneinBuiltup2050,
-         # GRE_4_2_percentChangeinMaxDailyPrecip2020to2050 = 100 * GRE_4_2_percentChangeinMaxDailyPrecip2020to2050,
-         GRE_4_3_percentBuiltupWithin1mAboveDrainage = 100 * GRE_4_3_percentBuiltupWithin1mAboveDrainage,
-         GRE_4_4_percentImperviousinBuiltup2018 = 100 * GRE_4_4_percentImperviousinBuiltup2018,
-         GRE_4_5_percentBuiltupWOvegetationcover2020 = 100 * GRE_4_5_percentBuiltupWOvegetationcover2020,
-         GRE_4_6_percentRiparianZonewoVegorWatercover2020 = 100 * GRE_4_6_percentRiparianZonewoVegorWatercover2020,
-         GRE_4_7_percentSteepSlopesWOvegetationcover2020 = 100 * GRE_4_7_percentSteepSlopesWOvegetationcover2020) 
+  mutate(GRE_2_3_population_exposure_pm25 = 100 * GRE_2_3_population_exposure_pm25)
 
 # GRE_4_2 ----
 indicators_GRE_4_2 = read.csv(paste(aws_s3_path,
@@ -213,9 +312,13 @@ indicators = indicators %>%
             by = "geo_id") %>% 
   mutate(GRE_4_2_percentChangeinMaxDailyPrecip2020to2050 = 100 * GRE_4_2_percentChangeinMaxDailyPrecip2020to2050)
 
-# keep distinct geo_id ----
+
+# keep distinct geo_id
 indicators = indicators %>% 
   distinct(geo_id, .keep_all = TRUE)
+
+
+##########################################################
 
 # cities comparison ----
 
@@ -361,13 +464,6 @@ server <- function(input, output, session) {
   })
   
   # # Update indicators based on selected theme
-  # observeEvent(input$theme,{
-  #     updateSelectInput(session,
-  #                       'indicator',
-  #                       choices=unique(indicators_definitions[indicators_definitions$theme==input$theme, "indicator_label"]),
-  #                       selected = unique(indicators_definitions[indicators_definitions$theme==input$theme, "indicator_label"])[1],
-  #     )
-  # })
   observeEvent(input$theme,{
     updateSelectInput(session,
                       'indicator',
@@ -402,6 +498,13 @@ server <- function(input, output, session) {
       showTab(inputId = "tabs", target = "Table")
       showTab(inputId = "tabs", target = "Chart")
       showTab(inputId = "tabs", target = "Map")
+      show("city_wide_indicator") 
+    } else if(input$indicator  %in% c("Extreme heat hazard","Extreme precipitation hazard")){
+      showTab(inputId = "tabs", target = "Benchmark") 
+      showTab(inputId = "tabs", target = "Definitions") 
+      hideTab(inputId = "tabs", target = "Table")
+      hideTab(inputId = "tabs", target = "Chart")
+      hideTab(inputId = "tabs", target = "Map")
       show("city_wide_indicator") 
     } else if(!input$indicator %in% c("Population exposure to PM 2.5","High pollution days","Air pollution (by pollutant)","Air pollution (by sector)")){
       showTab(inputId = "tabs", target = "Table")
@@ -488,10 +591,30 @@ server <- function(input, output, session) {
     
     # indicator color values ----
     
+    # if(input$indicator %in% c("Exposure to coastal and river flooding",
+    #                           "Extreme precipitation hazard")){
+    #   pal_indicator<- colorNumeric(palette = "Blues", 
+    #                                domain = selected_indicator_values,
+    #                                na.color = "gray",
+    #                                revers = FALSE)
+    #   table_color = "Blues"
+    # } else {
+    #   pal_indicator<- colorNumeric(palette = "Greens", 
+    #                                domain = selected_indicator_values,
+    #                                na.color = "gray",
+    #                                revers = FALSE)
+    #   
+    #   table_color = "Greens"
+    # }
+    
     pal_indicator<- colorNumeric(palette = "Greens", 
                                  domain = selected_indicator_values,
                                  na.color = "gray",
                                  revers = FALSE)
+    
+    table_color = "Greens"
+    
+    
     
     # indicator labels for map ----
     
@@ -610,14 +733,26 @@ server <- function(input, output, session) {
       
       # layers: worldpop with open space  -----
       
+      if(geo_name == "MEX-Mexico_City"){
+        pop_open_space_data_path = paste("https://cities-cities4forests.s3.eu-west-3.amazonaws.com/",
+                                         "data/population/worldpop/v_0/",
+                                         geo_name,
+                                         "-",
+                                         aoi_boundary_name,
+                                         "-WorldPop-population.tif",
+                                         sep = "")
+      } else {
+        pop_open_space_data_path = paste("/vsicurl/https://cities-cities4forests.s3.eu-west-3.amazonaws.com/",
+                                         "data/population/worldpop/v_0/",
+                                         geo_name,
+                                         "-",
+                                         aoi_boundary_name,
+                                         "-population-wOpenSpace-2020.tif",
+                                         sep = "")
+        
+      }
       
-      pop_open_space_data_path = paste("/vsicurl/https://cities-cities4forests.s3.eu-west-3.amazonaws.com/",
-                                       "data/population/worldpop/v_0/",
-                                       geo_name,
-                                       "-",
-                                       aoi_boundary_name,
-                                       "-population-wOpenSpace-2020.tif",
-                                       sep = "")
+      
       
       # collect raster data
       pop_open_space_data = raster(pop_open_space_data_path)
@@ -882,7 +1017,6 @@ server <- function(input, output, session) {
       # Layers control
       addLayersControl(
         overlayGroups = c("Administrative boundaries",
-                          # "Open Space Areas",
                           selected_indicator_label),
         options = layersControlOptions(collapsed = FALSE)
       ) 
@@ -1290,7 +1424,8 @@ server <- function(input, output, session) {
                       backgroundColor = styleInterval(seq(from = min(table_plot[,selected_indicator_label]),
                                                           to = max(table_plot[,selected_indicator_label]),
                                                           length.out = 8), 
-                                                      brewer.pal(9, "Greens")
+                                                      # brewer.pal(9, "Greens"),
+                                                      brewer.pal(9, table_color)
                       ),
                       fontWeight = 'bold')
     )
