@@ -5,9 +5,10 @@ account: wri-cities
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 6733226
-bundleId: 6387854
+bundleId: 6471070
 url: https://wri-cities.shinyapps.io/Cities4Forests-Dashboard/
-when: 1665411440.21749
-lastSyncTime: 1665411440.21751
+when: 1667477290.86051
+lastSyncTime: 1667477290.86052
 asMultiple: FALSE
 asStatic: FALSE
+ignoredFiles: dev/app.R
