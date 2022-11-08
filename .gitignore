@@ -141,3 +141,5 @@ test.csv
 # netcdf
 *.nc
 
+.terraform
+.terraform*
