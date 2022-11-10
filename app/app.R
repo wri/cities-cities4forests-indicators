@@ -301,12 +301,50 @@ indicators = indicators %>%
   mutate(GRE_4_2_percentChangeinMaxDailyPrecip2020to2050 = 100 * GRE_4_2_percentChangeinMaxDailyPrecip2020to2050)
 
 # GRE_5_1 ----
+# indicators_GRE_5_1 = read.csv(paste(aws_s3_path,
+#                                     "data/indicators/GRE-5.1.csv",
+#                                     sep = ""),
+#                               encoding="UTF-8")
+# 
+# 
+# 
+# indicators_GRE_5_1_aoi = indicators_GRE_5_1 %>%
+#   add_column(geo_parent_name = c("BRA-Salvador",
+#                                  "COD-Bukavu",
+#                                  "COD-Uvira" ,
+#                                  "COG-Brazzaville",
+#                                  "COL-Barranquilla",
+#                                  "ETH-Addis_Ababa",
+#                                  "ETH-Dire_Dawa",
+#                                  "KEN-Nairobi",
+#                                  "MDG-Antananarivo",
+#                                  "MEX-Mexico_City",
+#                                  "MEX-Monterrey",
+#                                  "RWA-Musanze")) %>%
+#   dplyr::select(geo_parent_name,
+#                 GRE_5_1_ghg_emissions =  total_CO2e) %>%
+#   mutate_if(is.numeric, round, 0)
+# 
+# indicators = indicators %>% 
+#   right_join(indicators_GRE_5_1_aoi,
+#              by = "geo_parent_name") 
+# 
+# 
+# indicators_GRE_5_1_unit = indicators_GRE_5_1 %>% 
+#   dplyr::select(c(1:85),105) %>% 
+#   rename(geo_id = X)
+# 
+# indicators = indicators %>% 
+#   left_join(indicators_GRE_5_1_unit,
+#             by = "geo_id")
+
+# GRE_5_1 v2 ----
 indicators_GRE_5_1 = read.csv(paste(aws_s3_path,
-                                    "data/indicators/GRE-5.1.csv",
+                                    "data/indicators/GRE-5.1_2.csv",
                                     sep = ""),
                               encoding="UTF-8")
 
-
+indicators_GRE_5_1$total_change = (indicators_GRE_5_1$total_2020_co2e - indicators_GRE_5_1$total_2000_co2e)/indicators_GRE_5_1$total_2000_co2e * 100
 
 indicators_GRE_5_1_aoi = indicators_GRE_5_1 %>%
   add_column(geo_parent_name = c("BRA-Salvador",
@@ -322,7 +360,7 @@ indicators_GRE_5_1_aoi = indicators_GRE_5_1 %>%
                                  "MEX-Monterrey",
                                  "RWA-Musanze")) %>%
   dplyr::select(geo_parent_name,
-                GRE_5_1_ghg_emissions =  total_CO2e) %>%
+                GRE_5_1_ghg_emissions =  total_change) %>%
   mutate_if(is.numeric, round, 0)
 
 indicators = indicators %>% 
@@ -331,12 +369,18 @@ indicators = indicators %>%
 
 
 indicators_GRE_5_1_unit = indicators_GRE_5_1 %>% 
-  dplyr::select(c(1:85),105) %>% 
+  dplyr::select(1,
+                c(194:284),
+                c(319:408)) %>% 
+  dplyr::select(-c("bc_2000_co2e","co_2000_co2e","ch4_2000_co2e","co2_2000_co2e",
+                   "oc_2000_co2e", "nmvoc_2000_co2e", "ch4_2020_co2e","co_2020_co2e" ,
+                   "oc_2020_co2e" , "nmvoc_2020_co2e","co2_2020_co2e" ,"nox_2020_co2e","nox_2000_co2e")) %>% 
   rename(geo_id = X)
 
 indicators = indicators %>% 
   left_join(indicators_GRE_5_1_unit,
             by = "geo_id")
+
 
 
 # keep distinct geo_id ----
@@ -1968,10 +2012,10 @@ server <- function(input, output, session) {
                               "High pollution days")){
       city_wide_indicator_value_unit = "days"
     } else if(input$indicator %in% c("Greenhouse gas emissions")){
-      city_wide_indicator_value_unit = "Million Tonnes CO2 eq"
-      city_wide_indicator_value = round(city_wide_indicator_value/1000000,2)
+      city_wide_indicator_value_unit = "% change"
+      # city_wide_indicator_value = round(city_wide_indicator_value/1000000,2)
     } else if(input$indicator %in% c("Air pollutant emissions")){
-      city_wide_indicator_value_unit = "%" #"Tonnes"
+      city_wide_indicator_value_unit = "% change" 
     } else if(input$indicator %in% c("Carbon flux from trees")){
       city_wide_indicator_value_unit = "Mt CO2 eq/ha"
     } 
@@ -2096,17 +2140,58 @@ server <- function(input, output, session) {
                           'tnr' = 'Off-road transportation',
                           'tro' = 'Road transportation'))
     } else if(input$indicator %in%  c("Greenhouse gas emissions")){
-      table_plot = aoi_indicators %>% 
+      # table_plot = aoi_indicators %>% 
+      #   as.data.frame() %>%
+      #   dplyr::select(-geometry) %>% 
+      #   pivot_longer(
+      #     cols = bc_agl:nmvoc_tro,
+      #     names_to = c("gas", "sector"),
+      #     names_pattern = "(.*)_(.*)",
+      #     values_to = "value") %>% 
+      #   dplyr::select(geo_name,
+      #                 gas,
+      #                 sector, 
+      #                 value) %>% 
+      #   arrange(desc(value)) %>% 
+      #   mutate_at("gas", 
+      #             ~recode(.,
+      #                     "bc"='Black carbon', 
+      #                     'ch4'='Methane',
+      #                     'co' = 'Carbon monoxide',
+      #                     'co2' = 'Carbon dioxide',
+      #                     'nox' = 'Nitrogen oxides',
+      #                     'so2' = 'Sulfur dioxide',
+      #                     'oc' = 'Organic carbon',
+      #                     'nh3' = 'Ammonia',
+      #                     'nmvoc' = 'Non-methane volatile organic compounds')) %>% 
+      #   mutate_at("sector", 
+      #             ~recode(.,
+      #                     "agl"='Agriculture livestock', 
+      #                     'ags'='Agriculture soils',
+      #                     'awb' = 'Agriculture waste burning',
+      #                     'ene' = 'Power generation',
+      #                     'fef' = 'Fugitives',
+      #                     'ind' = 'Industry',
+      #                     'res' = 'Residential, commercial, and other combustion',
+      #                     'shp' = 'Ships',
+      #                     'slv' = 'Solvents',
+      #                     'sum' = 'All sources',
+      #                     'swd' = 'Solid waste and wastewater',
+      #                     'tnr' = 'Off-road transportation',
+      #                     'tro' = 'Road transportation'))
+      
+      table_plot_years = aoi_indicators %>% 
         as.data.frame() %>%
         dplyr::select(-geometry) %>% 
         pivot_longer(
-          cols = bc_agl:nmvoc_tro,
-          names_to = c("gas", "sector"),
-          names_pattern = "(.*)_(.*)",
+          cols = bc_agl_2000_co2e:nmvoc_tro_2020_co2e,
+          names_to = c("gas", "sector","year","unit"),
+          names_pattern = "(.*)_(.*)_(.*)_(.*)",
           values_to = "value") %>% 
         dplyr::select(geo_name,
                       gas,
                       sector, 
+                      year,
                       value) %>% 
         arrange(desc(value)) %>% 
         mutate_at("gas", 
@@ -2135,6 +2220,12 @@ server <- function(input, output, session) {
                           'swd' = 'Solid waste and wastewater',
                           'tnr' = 'Off-road transportation',
                           'tro' = 'Road transportation'))
+      
+      table_plot = table_plot_years %>% 
+        dplyr::select("Sector" = "sector",
+                      "Gas" = "gas",
+                      "Year" = "year",
+                      "Emissions (tonnes of CO2 equivalent)" = "value")
     } else{
       table_plot = unit_indicators %>% 
         drop_na(selected_indicator_name, geo_name) %>% 
@@ -2331,15 +2422,71 @@ server <- function(input, output, session) {
       
       
     } else if(input$indicator == "Greenhouse gas emissions"){
-      fig <- plot_ly(table_plot, 
-                     x = ~sector, 
-                     y = ~value, 
-                     type = 'bar',
-                     name = ~gas,
-                     color = ~gas) %>% 
-        layout(yaxis = list(title = 'Emissions (CO2 eq)'), 
+      # fig <- plot_ly(table_plot, 
+      #                x = ~sector, 
+      #                y = ~value, 
+      #                type = 'bar',
+      #                name = ~gas,
+      #                color = ~gas) %>% 
+      #   layout(yaxis = list(title = 'Emissions (CO2 eq)'), 
+      #          xaxis = list(title = 'sectors',categoryorder = "total descending"),
+      #          barmode = 'stack')
+      
+      table_plot_2000 = table_plot_years %>% 
+        filter(year == 2000)
+      
+      table_plot_2020 = table_plot_years %>% 
+        filter(year == 2020)
+      
+      fig_2000 <- plot_ly(table_plot_2000, 
+                          x = ~sector, 
+                          y = ~value, 
+                          type = 'bar',
+                          name = ~gas,
+                          color = ~gas,
+                          legendgroup= ~year) %>% 
+        layout(yaxis = list(title = 'Greenhouse gas emissions <br> (tonnes of CO2 equivalent)'), 
                xaxis = list(title = 'sectors',categoryorder = "total descending"),
                barmode = 'stack')
+      
+      
+      fig_2020 <- plot_ly(table_plot_2020, 
+                          x = ~sector, 
+                          y = ~value, 
+                          type = 'bar',
+                          name = ~gas,
+                          color = ~gas,
+                          legendgroup= ~year,
+                          showlegend = FALSE) %>% 
+        layout(yaxis = list(title = 'Greenhouse gas emissions <br> (tonnes of CO2 equivalent)'), 
+               xaxis = list(title = 'sectors',categoryorder = "total descending"),
+               barmode = 'stack')
+      
+      annotations = list( 
+        list( 
+          x = 0.2,  
+          y = 1.0,  
+          text = "2000",  
+          xref = "paper",  
+          yref = "paper",  
+          xanchor = "center",  
+          yanchor = "bottom",  
+          showarrow = FALSE 
+        ),  
+        list( 
+          x = 0.8,  
+          y = 1,  
+          text = "2020",  
+          xref = "paper",  
+          yref = "paper",  
+          xanchor = "center",  
+          yanchor = "bottom",  
+          showarrow = FALSE 
+        ))
+      
+      fig <- subplot(fig_2000, fig_2020, shareY = TRUE, margin = 0.05) %>% 
+        layout(legend=list(title=list(text='<b> Gases </b>')),
+               annotations = annotations)
       
       
     } else {
