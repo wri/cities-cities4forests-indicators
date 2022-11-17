@@ -415,7 +415,7 @@ indicators_comparison = indicators[indicators$geo_id %in% cities_comparison_list
 
 ui <- tagList(
   useShinyjs(),
-  navbarPage(title = div("Dashboard",
+  navbarPage(title = div("Indicators Dashboard",
                          img(src = "logo.png",
                              height = "12px",
                              style = "top: -3px;
@@ -1520,6 +1520,20 @@ server <- function(input, output, session) {
                     "Land cover types")) 
     }
     
+    # GRE-3-1: Open space for public use - Add layers ----
+    if(input$indicator == "Open space for public use" & input$city %in% c("MEX-Mexico_City","MEX-Monterrey") ){
+      m = m %>% 
+        # Layers control
+        addLayersControl(
+          baseGroups = c("OSM (default)", "Esri", "Toner Lite"),
+          overlayGroups = c("Administrative boundaries",
+                            selected_indicator_label),
+          options = layersControlOptions(collapsed = TRUE)
+        ) 
+        # hideGroup(c("Open Space Areas",
+        #             "Land cover types")) 
+    }
+    
     # GRE-3-2: Access to public open space - Add layers ----
     if(input$indicator == "Access to public open space"){
       m = m %>% 
@@ -2025,7 +2039,9 @@ server <- function(input, output, session) {
     output$city_wide_indicator <- renderText({
       paste("<center>","<font size=5px; weight=500; color=\"#168A06\"><b>", 
             city_wide_indicator_value, 
-            city_wide_indicator_value_unit)
+            city_wide_indicator_value_unit,"<br>",
+            "<font size=2px; weight=500; color=\"#168A06\"><b>",
+            selected_indicator_legend)
     })
     
     #########################################
@@ -2139,6 +2155,13 @@ server <- function(input, output, session) {
                           'swd' = 'Solid waste and wastewater',
                           'tnr' = 'Off-road transportation',
                           'tro' = 'Road transportation'))
+      
+      # table_plot = table_plot %>% 
+      #   dplyr::select("Sector" = "sector",
+      #                 "Gas" = "gas",
+      #                 "Year" = "year",
+      #                 "Social cost (USD$)" = "value")
+      
     } else if(input$indicator %in%  c("Greenhouse gas emissions")){
       # table_plot = aoi_indicators %>% 
       #   as.data.frame() %>%
@@ -2378,7 +2401,7 @@ server <- function(input, output, session) {
                           name = ~gas,
                           color = ~gas,
                           legendgroup= ~year) %>% 
-        layout(yaxis = list(title = 'Social cost (USD)'), 
+        layout(yaxis = list(title = 'Social cost ($USD)'), 
                xaxis = list(title = 'sectors',categoryorder = "total descending"),
                barmode = 'stack')
       
@@ -2390,7 +2413,7 @@ server <- function(input, output, session) {
                           color = ~gas,
                           legendgroup= ~year,
                           showlegend = FALSE) %>% 
-        layout(yaxis = list(title = 'Social cost (USD)'), 
+        layout(yaxis = list(title = 'Social cost ($USD)'), 
                xaxis = list(title = 'sectors',categoryorder = "total descending"),
                barmode = 'stack')
       
