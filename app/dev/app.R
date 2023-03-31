@@ -148,8 +148,8 @@ pal.indicator.fun = function(selected_indicator_values){
 
 ui = tagList(
   useShinyjs(),
-  navbarPage(title = div("Indicators Dashboard dev",
-                         img(src = logo_file,
+  navbarPage(title = div("Indicators Dashboard dev c4f",
+                         img(src = "logo_c4f.png",
                              height = logo_height,
                              style = "top: -3px;
                                     right: -900px;padding-right:100px;")),
