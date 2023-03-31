@@ -37,7 +37,7 @@ RUN R -e 'install.packages(c(\
     repos="https://packagemanager.rstudio.com/cran/__linux__/focal/2022-09-02"\
 )'
 
-COPY ./app/dev/* /srv/shiny-server/
+COPY ./app/* /srv/shiny-server/
 
 EXPOSE 3838
 
