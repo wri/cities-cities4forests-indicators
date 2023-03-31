@@ -51,6 +51,8 @@ if(selected_project == "urbanshift"){
 
 
 
+
+
 # define aws s3 path
 
 aws_s3_path = "https://cities-indicators.s3.eu-west-3.amazonaws.com/"
