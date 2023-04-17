@@ -92,9 +92,9 @@ aws_s3_path = "https://cities-indicators.s3.eu-west-3.amazonaws.com/"
 
 # read indicator definition all projects------------
 
-indicators_definitions = read.csv(paste(aws_s3_path,
-                                        "indicators/definitions.csv",
-                                        sep = ""))
+# indicators_definitions = read.csv(paste(aws_s3_path,
+#                                         "indicators/definitions.csv",
+#                                         sep = ""))
 
 # read indicator definition ------------
 
@@ -331,12 +331,13 @@ ui = tagList(
                          #     height = logo_height,
                          #     style = "top: -3px;
                          #            right: -900px;padding-right:100px;")
-                         img(src = "logo_c4f.png",
+                         img(src = "https://cities-indicators.s3.eu-west-3.amazonaws.com/imgs/logo/logo_c4f.png",
                              height = "15px",
                              style = "top: -3px;
                                     right: -900px;padding-right:10px;"),
                          
-                         img(src = "logo_urbanshift.png",
+                         img(src = "https://cities-indicators.s3.eu-west-3.amazonaws.com/imgs/logo/logo_urbanshift.png",
+                             # src = "https://raw.githubusercontent.com/wri/cities-indicators-dashboard-urbanshift/main/dashboard-urbanshift/www/logo_urbanshift.png",
                              height = "30px",
                              style = "top: -3px;
                                     right: -100px;padding-right:10px;")
@@ -1675,7 +1676,12 @@ server <- function(input, output, session) {
     }
     
     # BIO-4: Vascular plant species ----
-    if(input$indicator  %in% c("Vascular plant species")){
+    if(input$indicator  %in% c("Vascular plant species") & !input$city %in% c("ETH-Addis_Ababa",
+                                                                              "ETH-Dire_Dawa",
+                                                                              "COD-Bukavu",
+                                                                              "COD-Uvira",
+                                                                              "IDN-Bitung",
+                                                                              "RWA-Musanze")){
       m = m %>% 
         # add gbif layer
         addCircleMarkers(lat = gbif_Tracheophyta$lat,
@@ -1710,7 +1716,11 @@ server <- function(input, output, session) {
     }
     
     # BIO-5: Bird species ----
-    if(input$indicator  %in% c("Bird species")){
+    if(input$indicator  %in% c("Bird species")  & !input$city %in% c("CHN-Ningbo",
+                                                                     "COD-Bukavu",
+                                                                     "COD-Uvira",
+                                                                     "ETH-Dire_Dawa",
+                                                                     "IDN-Palembang")){
       m = m %>% 
         # add gbif layer
         addCircleMarkers(lat = gbif_Aves$lat,
@@ -1745,7 +1755,9 @@ server <- function(input, output, session) {
     }
     
     # BIO-6: Arthropod species ----
-    if(input$indicator  %in% c("Arthropod species")){
+    if(input$indicator  %in% c("Arthropod species") & !input$city %in% c("COD-Bukavu",
+                                                                         "COD-Uvira",
+                                                                         "ETH-Dire_Dawa")){
       m = m %>% 
         # add gbif layer
         addCircleMarkers(lat = gbif_Arthropod$lat,
@@ -2206,7 +2218,12 @@ server <- function(input, output, session) {
                                                                       "IND-Pune",
                                                                       "IND-Surat",
                                                                       "MAR-Marrakech",
-                                                                      "RWA-Kigali")){
+                                                                      "RWA-Kigali",
+                                                                      "COD-Bukavu",
+                                                                      "RWA-Musanze",
+                                                                      "ETH-Addis_Ababa",
+                                                                      "COL-Barranquilla",
+                                                                      "MDG-Antananarivo")){
       m = m %>% 
         # plot layer: OSM 
         addPolygons(data = wdpa,
@@ -2246,7 +2263,8 @@ server <- function(input, output, session) {
                                                                                            "IND-Pune",
                                                                                            "IND-Surat",
                                                                                            "MAR-Marrakech",
-                                                                                           "RWA-Kigali")){
+                                                                                           "RWA-Kigali",
+                                                                                           "ETH-Addis_Ababa")){
       m = m %>% 
         # plot layer: WDPA 
         addPolygons(data = wdpa,
@@ -3526,17 +3544,25 @@ server <- function(input, output, session) {
       filter(indicator_label == selected_indicator_label) %>% 
       pull(indicator_definition)
     
+    print(indicator_def_text)
+    
     indicator_data_sources = indicators_definitions %>% 
       filter(indicator_label == selected_indicator_label) %>%  
       pull(data_sources)
+    
+    print(indicator_data_sources)
     
     indicator_importance = indicators_definitions %>% 
       filter(indicator_label == selected_indicator_label) %>%  
       pull(importance)
     
+    print(indicator_importance)
+    
     indicator_methods = indicators_definitions %>% 
       filter(indicator_label == selected_indicator_label) %>%  
       pull(methods)
+    
+    print(indicator_methods)
     
     # plot text 
     output$indicator_definition <- renderText({
@@ -3558,6 +3584,7 @@ server <- function(input, output, session) {
             "<font weight=50; color=\"#242456\"><b>", indicator_methods
       )
     })
+    
     
     
     session$onSessionEnded(function() {
