@@ -28,7 +28,7 @@ RUN R -e 'install.packages(c(\
         "raster",\
         "data.table",\
         "DT",\
-        "leafem",\
+        "shinycssloaders",\
         "RColorBrewer",\
         "shinydisconnect",\
         "shinyjs",\
