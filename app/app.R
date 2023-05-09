@@ -570,8 +570,8 @@ ui = tagList(
            actionButton(inputId = "email", 
                         icon = icon("envelope", lib = "font-awesome"), 
                         a("Contact Us", 
-                          href="mailto:saif.shabou@wri.org; Eric.Mackres@wri.org"),
-                        # style="color: #fff; background-color: #337ab7; border-color: #2e6da4",
+                          href="mailto:citiesdata@wri.org"),
+                        # href="mailto:saif.shabou@wri.org; Eric.Mackres@wri.org"),
                         style="length:40px")),
   )
 )
@@ -1631,7 +1631,8 @@ server <- function(input, output, session) {
                               "Vegetation cover in riparian areas",
                               "Vulnerable steep slopes")){
       
-      ndvi_data_path = paste(aws_s3_path,
+      ndvi_data_path = paste("/vsicurl/",
+                             aws_s3_path,
                              "data/vegetation/sentinel-2/",
                              selected_city,
                              "-",
